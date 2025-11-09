@@ -1,30 +1,32 @@
 <?php
 
-namespace App\Http\Controllers;
+namespace App\Http\Controllers\Api;
 
+use App\Http\Controllers\Controller;
 use App\Models\Partner;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Hash;
 
-class PartnerVerificationController extends Controller
+class PartnerApiController extends Controller
 {
-/**
+    /**
      * Download all partners data for offline verification
      * Protected by simple token authentication
      */
     public function downloadPartners(Request $request)
     {
         // Simple authentication - check for access token
-        // $token = $request->header('X-Access-Token') ?? $request->input('token');
+        $token = $request->header('X-Access-Token') ?? $request->input('token');
         
-        // // Replace with your own secret token (store in .env)
-        // $validToken = env('SCANNER_ACCESS_TOKEN', 'your-secret-token-here');
+        // Replace with your own secret token (store in .env)
+        $validToken = env('SCANNER_ACCESS_TOKEN', 'your-secret-token-here');
         
-        // if ($token !== $validToken) {
-        //     return response()->json([
-        //         'success' => false,
-        //         'message' => 'Unauthorized access'
-        //     ], 401);
-        // }
+        if ($token !== $validToken) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Unauthorized access'
+            ], 401);
+        }
 
         try {
             // Get only registered partners with minimal info
