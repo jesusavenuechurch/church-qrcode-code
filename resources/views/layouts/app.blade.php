@@ -3,109 +3,57 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>@yield('title', 'Partner Registration')</title>
+
+    <title>@yield('title', 'Welcome')</title>
+
     <script src="https://cdn.tailwindcss.com"></script>
     @yield('head')
 </head>
-<body class="min-h-screen flex flex-col bg-[#f8f7f4]">
-    
-<style>
-  .gold-text {
-    color: #7b5303ff; /* rich gold color */
-  }
-</style>
-    <!-- Decorative Elements - Fixed positions, no animation -->
-    <div class="decorative-blob blob-1"></div>
-    <div class="decorative-blob blob-2"></div>
-    <div class="decorative-blob blob-3"></div>
 
-    <!-- Navigation -->
-    <nav class="relative z-10">
-        <div class="container mx-auto px-4 py-4 md:py-5">
-            <div class="flex justify-between items-center">
-                <div class="flex items-center space-x-2 md:space-x-3">
-                    <div class="w-10 h-10 md:w-12 md:h-12 flex items-center justify-center">
-                        <img src="{{ asset('images/logo2.svg') }}" alt="Angel Lounges Logo" class="w-full h-full object-contain rounded-full shadow-md border border-white/40">
-                    </div>
-                    <h1 class="text-xl md:text-2xl font-bold bg-gradient-to-r gold-text bg-clip-text text-transparent">
-                        Angel Lounges
-                    </h1>
+<body class="min-h-screen flex flex-col bg-[#f9faf9] text-gray-900">
+
+    <!-- Top Navigation -->
+    <nav class="border-b border-gray-200 bg-white">
+        <div class="max-w-7xl mx-auto px-6 py-4 flex items-center justify-between">
+
+            <!-- Placeholder Identity -->
+            <div class="flex items-center gap-3">
+                <div class="w-9 h-9 rounded-xl bg-green-600
+                            flex items-center justify-center text-white font-semibold text-sm">
+                    ●
                 </div>
+
+                <span class="text-sm font-medium tracking-wide text-gray-700">
+                    Community Access
+                </span>
             </div>
+
+            <!-- Intentionally empty -->
+            <div></div>
         </div>
     </nav>
 
     <!-- Main Content -->
-    <main class="relative z-10 py-8 md:py-12 flex-1">
+    <main class="flex-1">
         @yield('content')
     </main>
 
     <!-- Footer -->
-    <footer class="relative z-10 glass-effect shadow-inner mt-auto">
-        <div class="container mx-auto px-4 md:px-6 py-6 md:py-8">
-            
-            <!-- Mobile: Stacked Layout -->
-            <div class="flex flex-col space-y-4 md:hidden">
-                <!-- Logos Grid -->
-                <div class="grid grid-cols-3 gap-4">
-                    <div class="flex flex-col items-center">
-                        <img src="{{ asset('images/logo.svg') }}" alt="Angel Lounge Logo"
-                             class="w-10 h-10 object-contain rounded-full border border-white/40 shadow-md">
-                        <span class="text-[10px] text-gray-600 mt-1 text-center leading-tight">Angel<br>Lounges</span>
-                    </div>
+    <footer class="border-t border-gray-200 bg-white">
+        <div class="max-w-7xl mx-auto px-6 py-6 flex flex-col md:flex-row
+                    items-center justify-between gap-4">
 
-                    <div class="flex flex-col items-center">
-                        <img src="{{ asset('images/ror.jpg') }}" alt="ROR Logo"
-                             class="w-10 h-10 object-contain rounded-full border border-white/40 shadow-md">
-                        <span class="text-[10px] text-gray-600 mt-1 text-center leading-tight">Rhapsody of<br>Realities</span>
-                    </div>
+            <p class="text-xs text-gray-500">
+                © {{ date('Y') }} Community Access
+            </p>
 
-                    <div class="flex flex-col items-center">
-                        <img src="{{ asset('images/ippc.jpeg') }}" alt="IPPC Logo"
-                             class="w-10 h-10 object-contain rounded-full border border-white/40 shadow-md">
-                        <span class="text-[10px] text-gray-600 mt-1 text-center leading-tight">IPPC<br>2025</span>
-                    </div>
-                </div>
-
-                <!-- Copyright -->
-                <p class="text-[10px] text-gray-700 font-medium text-center leading-tight">
-                    &copy; {{ date('Y') }} Angel Lounges.<br>All Rights Reserved.
-                </p>
-            </div>
-
-            <!-- Desktop: Horizontal Layout -->
-            <div class="hidden md:flex items-center justify-between">
-                
-                <!-- Logo Section -->
-                <div class="flex items-center space-x-6">
-                    <!-- Angel Lounge Logo -->
-                    <div class="flex items-center space-x-3">
-                        <img src="{{ asset('images/logo.svg') }}" alt="Angel Lounge Logo"
-                             class="w-12 h-12 object-contain rounded-full border border-white/40 shadow-md">
-                        <span class="text-gray-600 text-sm font-medium">Angel Lounges</span>
-                    </div>
-
-                    <!-- ROR Logo -->
-                    <div class="flex items-center space-x-2">
-                        <img src="{{ asset('images/ror.jpg') }}" alt="ROR Logo"
-                             class="w-12 h-12 object-contain rounded-full border border-white/40 shadow-md">
-                        <span class="text-gray-600 text-sm font-medium">Rhapsody of Realities</span>
-                    </div>
-
-                    <!-- IPPC Logo -->
-                    <div class="flex items-center space-x-2">
-                        <img src="{{ asset('images/ippc.jpeg') }}" alt="IPPC Logo"
-                             class="w-12 h-12 object-contain rounded-full border border-white/40 shadow-md">
-                        <span class="text-gray-600 text-sm font-medium">IPPC 2025</span>
-                    </div>
-                </div>
-
-                <!-- Copyright -->
-                <p class="text-sm text-gray-700 font-medium">
-                    &copy; {{ date('Y') }} Angel Lounges. All Rights Reserved.
-                </p>
+            <div class="flex gap-6 text-xs text-gray-500">
+                <span>Privacy</span>
+                <span>Terms</span>
+                <span>Support</span>
             </div>
         </div>
     </footer>
+
 </body>
 </html>

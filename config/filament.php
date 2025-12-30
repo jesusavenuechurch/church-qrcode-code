@@ -104,4 +104,9 @@ return [
 
     'system_route_prefix' => 'filament',
 
+      'tenant_filtering' => [
+        'enabled' => true,
+        'relationship' => 'organization',
+    ],
+
 ];
