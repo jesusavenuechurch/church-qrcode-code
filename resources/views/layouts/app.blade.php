@@ -1,56 +1,50 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="en" class="h-full">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-
-    <title>@yield('title', 'Welcome')</title>
-
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>@yield('title', 'VENTIQ')</title>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&display=swap" rel="stylesheet">
     <script src="https://cdn.tailwindcss.com"></script>
-    @yield('head')
+    <script defer src="https://unpkg.com/alpinejs@3.x.x/dist/cdn.min.js"></script>
+    <style>
+        body { font-family: 'Inter', sans-serif; -webkit-tap-highlight-color: transparent; }
+        .no-scrollbar::-webkit-scrollbar { display: none; }
+    </style>
 </head>
 
-<body class="min-h-screen flex flex-col bg-[#f9faf9] text-gray-900">
+<body class="h-full overflow-hidden flex flex-col bg-[#F8FAFC] text-[#1D4069]">
 
-    <!-- Top Navigation -->
-    <nav class="border-b border-gray-200 bg-white">
-        <div class="max-w-7xl mx-auto px-6 py-4 flex items-center justify-between">
+    <nav class="flex-none border-b border-gray-100 bg-white/80 backdrop-blur-md z-50">
+        <div class="max-w-7xl mx-auto px-4 py-3 flex items-center justify-between">
+            <a href="/" class="flex items-center gap-2">
+                <img src="{{ asset('images/ventiq-noback.png') }}" alt="Logo" class="w-8 h-8 object-contain">
+                <span class="text-base font-bold tracking-tight uppercase text-[#1D4069]">VENTIQ</span>
+            </a>
 
-            <!-- Placeholder Identity -->
-            <div class="flex items-center gap-3">
-                <div class="w-9 h-9 rounded-xl bg-green-600
-                            flex items-center justify-center text-white font-semibold text-sm">
-                    ●
-                </div>
-
-                <span class="text-sm font-medium tracking-wide text-gray-700">
-                    Community Access
-                </span>
+            <div class="flex items-center gap-6">
+                <a href="/pricing" class="text-xs font-bold uppercase tracking-tight text-gray-500 hover:text-[#F07F22] transition-colors">
+                    Pricing
+                </a>
+                <a href="{{ route('filament.admin.auth.login') }}" class="text-xs font-bold uppercase tracking-tight text-[#1D4069] border-l border-gray-200 pl-6 hover:text-orange-600 transition-colors">
+                    Login
+                </a>
             </div>
-
-            <!-- Intentionally empty -->
-            <div></div>
         </div>
     </nav>
 
-    <!-- Main Content -->
-    <main class="flex-1">
+    <main class="flex-grow relative overflow-y-auto no-scrollbar">
         @yield('content')
     </main>
 
-    <!-- Footer -->
-    <footer class="border-t border-gray-200 bg-white">
-        <div class="max-w-7xl mx-auto px-6 py-6 flex flex-col md:flex-row
-                    items-center justify-between gap-4">
-
-            <p class="text-xs text-gray-500">
-                © {{ date('Y') }} Community Access
+    <footer class="flex-none bg-white border-t border-gray-100 py-3 px-6">
+        <div class="max-w-7xl mx-auto flex justify-between items-center">
+            <p class="text-[10px] font-bold text-gray-400 uppercase tracking-widest">
+                © {{ date('Y') }} VENTIQ
             </p>
-
-            <div class="flex gap-6 text-xs text-gray-500">
-                <span>Privacy</span>
-                <span>Terms</span>
-                <span>Support</span>
+            <div class="flex gap-4 text-[10px] font-bold uppercase tracking-tight text-gray-500">
+                <a href="#" class="hover:text-orange-500">Terms</a>
+                <a href="#" class="hover:text-orange-500">Support</a>
             </div>
         </div>
     </footer>

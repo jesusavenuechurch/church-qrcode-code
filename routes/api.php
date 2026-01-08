@@ -7,8 +7,7 @@ use App\Http\Controllers\PartnerVerificationController;
 use App\Http\Controllers\CheckInController;
 use App\Http\Controllers\Api\TicketScanController;
 use App\Http\Controllers\Api\AuthController;
-
-
+use App\Http\Controllers\WhatsAppController;
 
 Route::get('/partner/download', [PartnerVerificationController::class, 'downloadPartners']);
 Route::get('/partner/verify/{id}', [PartnerVerificationController::class, 'verifyPartner']);
@@ -45,3 +44,6 @@ Route::middleware('auth:sanctum')->group(function () {
     // Sync status (check what needs syncing)
     Route::get('/scanner/sync-status', [TicketScanController::class, 'syncStatus']);
 });
+
+Route::post('/whatsapp/webhook', [WhatsAppController::class, 'webhook'])
+    ->name('whatsapp.webhook');

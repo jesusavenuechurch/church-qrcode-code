@@ -92,4 +92,45 @@ return [
         'completed' => 'Completed',
         'cancelled' => 'Cancelled',
     ],
+
+     'delivery_methods' => [
+        'whatsapp' => [
+            'label' => 'WhatsApp',
+            'icon' => 'fa-brands fa-whatsapp',
+            'color' => 'text-green-600',
+        ],
+        'email' => [
+            'label' => 'Email',
+            'icon' => 'fa-envelope',
+            'color' => 'text-blue-600',
+        ],
+        'both' => [
+            'label' => 'WhatsApp & Email',
+            'icon' => 'fa-paper-plane',
+            'color' => 'text-purple-600',
+        ],
+    ],
+
+    'delivery_statuses' => [
+        'pending' => [
+            'label' => 'Pending Delivery',
+            'color' => 'warning',
+            'icon' => 'fa-clock',
+        ],
+        'sent' => [
+            'label' => 'Sent',
+            'color' => 'info',
+            'icon' => 'fa-paper-plane',
+        ],
+        'delivered' => [
+            'label' => 'Delivered',
+            'color' => 'success',
+            'icon' => 'fa-check-circle',
+        ],
+        'failed' => [
+            'label' => 'Failed',
+            'color' => 'danger',
+            'icon' => 'fa-exclamation-circle',
+        ],
+    ],
 ];

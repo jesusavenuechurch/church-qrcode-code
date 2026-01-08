@@ -18,8 +18,8 @@ class DatabaseSeeder extends Seeder
         $this->call([
             RolesAndPermissionsSeeder::class, // Run this FIRST - creates roles & permissions
             //UserSeeder::class,                 // Then users - can assign roles
-            DemoDataSeeder::class,   
-            InstallmentTestSeeder::class,         // Finally demo data - uses users & roles
+           // DemoDataSeeder::class,   
+            // InstallmentTestSeeder::class,         // Finally demo data - uses users & roles
         ]);
     }
 }

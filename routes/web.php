@@ -8,6 +8,7 @@ use App\Http\Controllers\PublicEventController;
 use App\Http\Controllers\RegistrationController;
 use App\Http\Controllers\EventsBrowseController;
 use App\Http\Controllers\InstallmentController;
+use App\Http\Controllers\WhatsAppController;
 
 Route::get('/', function () {
     return view('welcome');
@@ -83,3 +84,15 @@ Route::prefix('installment')->name('installment.')->group(function () {
     Route::get('/{ticket}', [InstallmentController::class, 'show'])->name('show');
     Route::post('/{ticket}/pay', [InstallmentController::class, 'pay'])->name('pay');
 });
+
+Route::post('/whatsapp/webhook', [WhatsAppController::class, 'webhook'])
+    ->name('whatsapp.webhook');
+
+Route::get('/pricing', function () {
+    return view('public.pricing');
+})->name('pricing');
+
+
+Route::get('/access', function () {
+    return view('public.org-admin');
+})->name('pricing');

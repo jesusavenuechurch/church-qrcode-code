@@ -23,16 +23,25 @@ class Ticket extends Model
         'qr_code_path', 'status', 'payment_method', 'amount', 'payment_status',
         'payment_date', 'payment_reference', 'delivery_method', 'delivered_at',
         'checked_in_at', 'checked_in_by', 'created_by', 'ticket_preference',
-        'printed_at', 'printed_by', 'avatar_path', 'avatar_generated_at'
+        'printed_at', 'printed_by', 'avatar_path', 'avatar_generated_at',
+        // ✅ NEW: WhatsApp delivery fields
+        'preferred_delivery', 'has_whatsapp', 'delivery_status',
+        'whatsapp_delivered_at', 'email_delivered_at', 'delivery_log', 'amount_paid'
     ];
 
     protected $casts = [
         'amount' => 'decimal:2',
+        'amount_paid' => 'decimal:2',
         'payment_date' => 'datetime',
         'delivered_at' => 'datetime',
         'checked_in_at' => 'datetime',
         'avatar_generated_at' => 'datetime',
         'printed_at' => 'datetime',
+        // ✅ NEW: WhatsApp delivery casts
+        'has_whatsapp' => 'boolean',
+        'whatsapp_delivered_at' => 'datetime',
+        'email_delivered_at' => 'datetime',
+        'delivery_log' => 'array',
     ];
 
     // ===== RELATIONSHIPS =====
@@ -191,8 +200,8 @@ class Ticket extends Model
     }
 
     /**
- * Check if this ticket supports installments
- */
+     * Check if this ticket supports installments
+     */
     public function hasInstallments(): bool
     {
         return $this->event->allow_installments ?? false;
@@ -206,8 +215,103 @@ class Ticket extends Model
         return $this->payments()->pending()->exists();
     }
 
+    // ===== 🆕 WHATSAPP DELIVERY HELPERS =====
 
-    
+    /**
+     * Check if ticket should be delivered via WhatsApp
+     * WhatsApp is OPTIONAL based on user preference
+     */
+    public function shouldDeliverViaWhatsApp(): bool
+    {
+        return $this->has_whatsapp && 
+               in_array($this->preferred_delivery, ['whatsapp', 'both']) &&
+               $this->client->phone;
+    }
+
+    /**
+     * Check if ticket should be delivered via Email
+     * Email is ALWAYS sent if email address exists (free, reliable, standard)
+     */
+    public function shouldDeliverViaEmail(): bool
+    {
+        return !empty($this->client->email);
+    }
+
+    /**
+     * Check if ticket has been delivered via WhatsApp
+     */
+    public function isDeliveredViaWhatsApp(): bool
+    {
+        return $this->whatsapp_delivered_at !== null;
+    }
+
+    /**
+     * Check if ticket has been delivered via Email
+     */
+    public function isDeliveredViaEmail(): bool
+    {
+        return $this->email_delivered_at !== null;
+    }
+
+    /**
+     * Mark ticket as delivered via WhatsApp
+     */
+    public function markAsDeliveredViaWhatsApp(): void
+    {
+        $log = $this->delivery_log ?? [];
+        $log[] = [
+            'method' => 'whatsapp',
+            'status' => 'delivered',
+            'timestamp' => now()->toIso8601String(),
+            'phone' => $this->client->phone,
+        ];
+
+        $this->update([
+            'whatsapp_delivered_at' => now(),
+            'delivery_status' => 'delivered',
+            'delivery_log' => $log,
+        ]);
+    }
+
+    /**
+     * Mark ticket as delivered via Email
+     */
+    public function markAsDeliveredViaEmail(): void
+    {
+        $log = $this->delivery_log ?? [];
+        $log[] = [
+            'method' => 'email',
+            'status' => 'delivered',
+            'timestamp' => now()->toIso8601String(),
+            'email' => $this->client->email,
+        ];
+
+        $this->update([
+            'email_delivered_at' => now(),
+            'delivery_status' => 'delivered',
+            'delivery_log' => $log,
+        ]);
+    }
+
+    /**
+     * Log delivery failure
+     */
+    public function logDeliveryFailure(string $method, string $reason): void
+    {
+        $log = $this->delivery_log ?? [];
+        $log[] = [
+            'method' => $method,
+            'status' => 'failed',
+            'reason' => $reason,
+            'timestamp' => now()->toIso8601String(),
+        ];
+
+        $this->update([
+            'delivery_status' => 'failed',
+            'delivery_log' => $log,
+        ]);
+    }
+
     // ===== HOOKS =====
 
     protected static function booted(): void
@@ -226,12 +330,6 @@ class Ticket extends Model
             Log::info("New ticket created: {$ticket->ticket_number}");
         });
 
-        // static::created(function ($ticket) {
-        //     // Generate QR code image after ticket is created
-        //     $ticket->generateQrCode();
-        //     Log::info("QR code generated for ticket: {$ticket->ticket_number}");
-        // });
-
         // Regenerate QR code if tier changes
         static::updated(function ($ticket) {
             if ($ticket->isDirty('event_tier_id')) {
@@ -242,19 +340,75 @@ class Ticket extends Model
 
         static::created(function ($ticket) {
             if ($ticket->payment_status === 'pending') {
-                 Log::info("🔔 Payment is PENDING - calling notifyAdminsOfNewRegistration()");
+                Log::info("🔔 Payment is PENDING - calling notifyAdminsOfNewRegistration()");
                 $ticket->notifyAdminsOfNewRegistration();
-            }else {
-            Log::info("⏭️  Payment is NOT pending ({$ticket->payment_status}) - skipping notification");
-        }
+            } else {
+                Log::info("⏭️ Payment is NOT pending ({$ticket->payment_status}) - skipping notification");
+            }
         });
 
         static::updated(function ($ticket) {
+            // ✅ FIXED: Prevent infinite loop by checking if payment_status actually changed
             if ($ticket->isDirty('payment_status') && $ticket->payment_status === 'completed') {
-                $ticket->notifyClientOfApproval();
-                $ticket->checkLowInventory();
+                // Run these OUTSIDE the model update cycle to prevent loops
+                dispatch(function () use ($ticket) {
+                    $ticket->notifyClientOfApproval();
+                    $ticket->checkLowInventory();
+                    
+                    // ✅ Auto-deliver ticket (non-blocking, failures won't stop approval)
+                    $ticket->autoDeliverTicket();
+                })->afterResponse();
             }
         });
+    }
+
+    // ===== 🆕 AUTO-DELIVERY METHOD =====
+
+    /**
+     * Automatically deliver ticket based on preferred delivery method
+     * NON-BLOCKING: Failures are logged but don't stop payment approval
+     */
+    public function autoDeliverTicket(): void
+    {
+        try {
+            Log::info("🚀 Auto-delivering ticket {$this->ticket_number}");
+
+            // Deliver via WhatsApp if enabled
+            if ($this->shouldDeliverViaWhatsApp()) {
+                try {
+                    $success = \App\Http\Controllers\WhatsAppController::deliverTicket($this);
+                    
+                    if ($success) {
+                        Log::info("✅ WhatsApp delivery successful for {$this->ticket_number}");
+                    } else {
+                        Log::warning("⚠️ WhatsApp delivery failed for {$this->ticket_number}");
+                        $this->logDeliveryFailure('whatsapp', 'Delivery method returned false - check Twilio limits');
+                    }
+                } catch (\Exception $e) {
+                    // Log but don't throw - delivery failures shouldn't block approval
+                    Log::error("❌ WhatsApp delivery exception for {$this->ticket_number}: " . $e->getMessage());
+                    $this->logDeliveryFailure('whatsapp', $e->getMessage());
+                }
+            } else {
+                Log::info("⏭️ Skipping WhatsApp delivery for {$this->ticket_number} (not enabled or no phone)");
+            }
+
+            // Deliver via Email if enabled
+            if ($this->shouldDeliverViaEmail()) {
+                try {
+                    // TODO: Implement email delivery
+                    // Mail::to($this->client->email)->send(new TicketDeliveryMail($this));
+                    Log::info("📧 Email delivery would trigger here for {$this->ticket_number}");
+                } catch (\Exception $e) {
+                    Log::error("❌ Email delivery exception for {$this->ticket_number}: " . $e->getMessage());
+                    $this->logDeliveryFailure('email', $e->getMessage());
+                }
+            }
+
+        } catch (\Exception $e) {
+            // Final catch-all - log but never throw
+            Log::error("❌ Auto-delivery critical error for ticket {$this->ticket_number}: " . $e->getMessage());
+        }
     }
 
     // ===== TIER COLOR LOGIC =====
@@ -585,7 +739,7 @@ class Ticket extends Model
         }
     }
 
-        // For sending notifications to client
+    // For sending notifications to client
     public function routeNotificationForDatabase()
     {
         return $this->client;

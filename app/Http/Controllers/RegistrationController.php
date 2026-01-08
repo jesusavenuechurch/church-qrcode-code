@@ -78,6 +78,9 @@ class RegistrationController extends Controller
             'email' => 'nullable|email|max:255',
             'phone' => 'required|string|regex:/^\+266[0-9]{8}$/',
             'terms' => 'accepted',
+            // ✅ NEW: WhatsApp delivery preference
+            'has_whatsapp' => 'nullable|boolean',
+            'preferred_delivery' => 'nullable|in:email,whatsapp,both',
         ];
 
         // If buying multiple tickets, collect companion info
@@ -147,6 +150,10 @@ class RegistrationController extends Controller
             $ticketStatus = $isFree ? 'active' : 'pending';
             $paymentStatus = $isFree ? 'completed' : ($paymentType === 'deposit' ? 'partial' : 'pending');
 
+            // ✅ NEW: Determine delivery preference
+            $hasWhatsApp = $request->has('has_whatsapp') && $request->has_whatsapp;
+            $preferredDelivery = $this->determinePreferredDelivery($request, $validated);
+
             $createdTickets = [];
 
             // 4. Create tickets for each person
@@ -192,6 +199,10 @@ class RegistrationController extends Controller
                     'delivery_method' => $validated['email'] ? 'email' : 'whatsapp',
                     'delivered_at' => $isFree ? now() : null,
                     'created_by' => null,
+                    // ✅ NEW: WhatsApp delivery fields
+                    'has_whatsapp' => $hasWhatsApp,
+                    'preferred_delivery' => $preferredDelivery,
+                    'delivery_status' => 'pending',
                 ]);
 
                 // Create payment record for paid tickets
@@ -258,6 +269,32 @@ class RegistrationController extends Controller
         }
 
         return view('public.confirmation', compact('organization', 'event', 'ticket', 'paymentMethodDetails', 'allTickets'));
+    }
+
+    /**
+     * ✅ NEW: Determine preferred delivery method
+     */
+    private function determinePreferredDelivery(Request $request, array $validated): string
+    {
+        // If user explicitly selected delivery preference
+        if ($request->has('preferred_delivery')) {
+            return $validated['preferred_delivery'];
+        }
+
+        // Auto-determine based on what's available
+        $hasEmail = !empty($validated['email']);
+        $hasWhatsApp = $request->has('has_whatsapp') && $request->has_whatsapp;
+
+        if ($hasEmail && $hasWhatsApp) {
+            return 'both';
+        } elseif ($hasWhatsApp) {
+            return 'whatsapp';
+        } elseif ($hasEmail) {
+            return 'email';
+        }
+
+        // Default to WhatsApp if phone is provided
+        return 'whatsapp';
     }
 
     /**

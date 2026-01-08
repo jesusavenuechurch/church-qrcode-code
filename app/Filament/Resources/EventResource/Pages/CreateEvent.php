@@ -104,7 +104,7 @@ class CreateEvent extends CreateRecord
                 Forms\Components\TextInput::make('name')
                     ->label('Event Name')
                     ->required()
-                    ->live()
+                    ->live(debounce: 500)
                     ->afterStateUpdated(function ($state, callable $set, callable $get) {
                         if (!$get('slug_locked')) {
                             $set('slug', Str::slug($state));

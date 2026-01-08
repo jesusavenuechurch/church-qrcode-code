@@ -14,6 +14,9 @@ use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Support\Collection;
 use App\Filament\Resources\TicketResource\Pages;
+use Illuminate\Support\Facades\DB;
+use App\Http\Controllers\WhatsAppController;
+use App\Jobs\SendTicketApprovedEmail;
 
 class TicketResource extends Resource
 {
@@ -264,36 +267,45 @@ class TicketResource extends Resource
                             return [$method->payment_method => $label];
                         })->toArray();
                         
+                        $currencySymbol = config('constants.currency.symbol', 'M');
+                        
                         return [
-                            // Show payment progress
-                            Forms\Components\Placeholder::make('payment_info')
-                                ->label('')
-                                ->content(new \Illuminate\Support\HtmlString('
-                                    <div class="bg-blue-50 border border-blue-200 rounded-lg p-4 mb-4">
-                                        <p class="font-semibold text-blue-900 mb-3">Current Payment Status:</p>
-                                        <div class="grid grid-cols-3 gap-3 text-sm mb-3">
-                                            <div class="bg-white rounded p-2 text-center">
-                                                <p class="text-xs text-gray-600">Paid</p>
-                                                <p class="font-bold text-green-600">' . config('constants.currency.symbol') . ' ' . number_format($record->amount_paid, 2) . '</p>
-                                            </div>
-                                            <div class="bg-white rounded p-2 text-center">
-                                                <p class="text-xs text-gray-600">This Payment</p>
-                                                <p class="font-bold text-blue-600">' . config('constants.currency.symbol') . ' ' . number_format($pendingPayment->amount, 2) . '</p>
-                                            </div>
-                                            <div class="bg-white rounded p-2 text-center">
-                                                <p class="text-xs text-gray-600">Remaining</p>
-                                                <p class="font-bold text-orange-600">' . config('constants.currency.symbol') . ' ' . number_format($record->remaining_amount - $pendingPayment->amount, 2) . '</p>
-                                            </div>
-                                        </div>
-                                        <div class="text-sm text-blue-800">
-                                            <p><strong>Payment Type:</strong> ' . ucfirst($pendingPayment->payment_type) . '</p>
-                                            <p><strong>Amount:</strong> ' . config('constants.currency.symbol') . ' ' . number_format($pendingPayment->amount, 2) . '</p>
-                                            <p><strong>Method:</strong> ' . ($pendingPayment->payment_method_label ?? 'Not specified') . '</p>
-                                            <p><strong>Reference:</strong> ' . ($pendingPayment->payment_reference ?: 'Not provided') . '</p>
-                                            <p><strong>Date:</strong> ' . $pendingPayment->payment_date?->format('M j, Y @ g:i A') . '</p>
-                                        </div>
-                                    </div>
-                                '))
+                            Forms\Components\Section::make('Current Payment Status')
+                                ->schema([
+                                    Forms\Components\Grid::make(3)
+                                        ->schema([
+                                            Forms\Components\Placeholder::make('amount_paid')
+                                                ->label('Already Paid')
+                                                ->content($currencySymbol . ' ' . number_format($record->amount_paid, 2)),
+                                            
+                                            Forms\Components\Placeholder::make('this_payment')
+                                                ->label('This Payment')
+                                                ->content($currencySymbol . ' ' . number_format($pendingPayment->amount, 2)),
+                                            
+                                            Forms\Components\Placeholder::make('remaining')
+                                                ->label('After This Payment')
+                                                ->content($currencySymbol . ' ' . number_format($record->remaining_amount - $pendingPayment->amount, 2)),
+                                        ]),
+                                    
+                                    Forms\Components\Grid::make(2)
+                                        ->schema([
+                                            Forms\Components\Placeholder::make('payment_type')
+                                                ->label('Payment Type')
+                                                ->content(ucfirst($pendingPayment->payment_type)),
+                                            
+                                            Forms\Components\Placeholder::make('payment_date')
+                                                ->label('Payment Date')
+                                                ->content($pendingPayment->payment_date?->format('M j, Y @ g:i A')),
+                                            
+                                            Forms\Components\Placeholder::make('current_method')
+                                                ->label('Stated Method')
+                                                ->content($pendingPayment->payment_method_label ?? 'Not specified'),
+                                            
+                                            Forms\Components\Placeholder::make('current_reference')
+                                                ->label('Stated Reference')
+                                                ->content($pendingPayment->payment_reference ?: 'Not provided'),
+                                        ]),
+                                ])
                                 ->columnSpanFull(),
                             
                             Forms\Components\Select::make('payment_method')
@@ -345,10 +357,26 @@ class TicketResource extends Resource
                             $remainingAmount = $record->remaining_amount;
                             $isFullyPaid = $remainingAmount <= 0;
 
+                            // ✅ NEW: Send email + WhatsApp after approval
+                            if ($isFullyPaid && $record->payment_status === 'completed') {
+                                // Dispatch email job (if email exists)
+                                if ($record->client->email) {
+                                    dispatch(new SendTicketApprovedEmail($record->id))->afterResponse();
+                                }
+
+                                // Send WhatsApp (if opted in)
+                                if ($record->has_whatsapp && $record->client->phone) {
+                                    // Use afterResponse to prevent blocking
+                                    dispatch(function() use ($record) {
+                                        WhatsAppController::deliverTicket($record);
+                                    })->afterResponse();
+                                }
+                            }
+
                             Notification::make()
                                 ->title('Payment Approved')
                                 ->body($isFullyPaid 
-                                    ? "Ticket {$record->ticket_number} is now fully paid and activated!"
+                                    ? "Ticket {$record->ticket_number} is now fully paid and activated! Notifications sent."
                                     : "Payment approved. Remaining balance: " . config('constants.currency.symbol') . ' ' . number_format($remainingAmount, 2)
                                 )
                                 ->success()
@@ -367,30 +395,57 @@ class TicketResource extends Resource
                         }
                     }),
 
-                // SEND TICKET
+                // MANUAL RESEND ACTIONS
                 Tables\Actions\ActionGroup::make([
-                    Tables\Actions\Action::make('whatsapp')
-                        ->label('WhatsApp')
+                    Tables\Actions\Action::make('resend_whatsapp')
+                        ->label('Resend WhatsApp')
                         ->icon('heroicon-o-chat-bubble-left-right')
                         ->color('success')
-                        ->action(fn (Ticket $record) => redirect()->away(
-                            "https://wa.me/" .
-                            preg_replace('/\D/', '', $record->client->phone) .
-                            "?text=" . urlencode(
-                                "Hi {$record->client->full_name}, here is your ticket: "
-                                . route('ticket.download', $record->qr_code)
-                            )
-                        )),
+                        ->visible(fn ($record) => 
+                            $record->payment_status === 'completed' 
+                            && $record->has_whatsapp
+                        )
+                        ->requiresConfirmation()
+                        ->action(function (Ticket $record) {
+                            $success = WhatsAppController::deliverTicket($record);
+                            
+                            if ($success) {
+                                Notification::make()
+                                    ->title('WhatsApp Sent')
+                                    ->body('Ticket sent to ' . $record->client->phone)
+                                    ->success()
+                                    ->send();
+                            } else {
+                                Notification::make()
+                                    ->title('Failed')
+                                    ->body('Failed to send WhatsApp. Check logs.')
+                                    ->danger()
+                                    ->send();
+                            }
+                        }),
 
-                    Tables\Actions\Action::make('email')
-                        ->label('Email')
+                    Tables\Actions\Action::make('resend_email')
+                        ->label('Resend Email')
                         ->icon('heroicon-o-envelope')
-                        ->action(fn () => null),
+                        ->visible(fn ($record) => 
+                            $record->payment_status === 'completed' 
+                            && $record->client->email
+                        )
+                        ->requiresConfirmation()
+                        ->action(function (Ticket $record) {
+                            dispatch(new SendTicketApprovedEmail($record->id))->afterResponse();
+                            
+                            Notification::make()
+                                ->title('Email Sent')
+                                ->body('Ticket sent to ' . $record->client->email)
+                                ->success()
+                                ->send();
+                        }),
 
                     Tables\Actions\Action::make('copy_link')
-                        ->label('Copy Link')
+                        ->label('Copy Download Link')
                         ->icon('heroicon-o-link')
-                        ->modalHeading('Ticket Link')
+                        ->modalHeading('Ticket Download Link')
                         ->modalContent(fn ($record) => view(
                             'filament.modals.ticket-link',
                             [
@@ -402,7 +457,8 @@ class TicketResource extends Resource
                 ])
                     ->label('Send Ticket')
                     ->icon('heroicon-o-paper-airplane')
-                    ->color('primary'),
+                    ->color('primary')
+                    ->visible(fn ($record) => $record->payment_status === 'completed'),
 
                 // MORE ACTIONS
                 Tables\Actions\ActionGroup::make([
@@ -455,31 +511,22 @@ class TicketResource extends Resource
                         $defaultMethod = $orgPaymentMethods->first()?->payment_method ?? 'cash';
                         
                         return [
-                            Forms\Components\Placeholder::make('summary')
-                                ->label('')
-                                ->content(new \Illuminate\Support\HtmlString('
-                                    <div class="bg-blue-50 border border-blue-200 rounded-lg p-4 mb-4">
-                                        <p class="font-semibold text-blue-900 mb-2">
-                                            Approving ' . $records->where('payment_status', 'pending')->count() . ' ticket(s)
-                                        </p>
-                                        <p class="text-sm text-blue-800">
-                                            System will use existing payment details from each ticket where available.
-                                        </p>
-                                    </div>
-                                '))
+                            Forms\Components\Section::make('Bulk Approval Summary')
+                                ->description('Approving ' . $records->where('payment_status', 'pending')->count() . ' ticket(s). Email and WhatsApp will be sent automatically to each approved ticket.')
+                                ->schema([
+                                    Forms\Components\Toggle::make('auto_use_existing')
+                                        ->label('Use Existing Payment Details')
+                                        ->helperText('Use payment method/reference from tickets that already have them')
+                                        ->default(true),
+                                    
+                                    Forms\Components\Select::make('payment_method')
+                                        ->label('Default Payment Method')
+                                        ->helperText('Used only for tickets without a payment method')
+                                        ->options($paymentOptions)
+                                        ->default($defaultMethod)
+                                        ->required(),
+                                ])
                                 ->columnSpanFull(),
-                            
-                            Forms\Components\Toggle::make('auto_use_existing')
-                                ->label('Use Existing Payment Details')
-                                ->helperText('Use payment method/reference from tickets that already have them')
-                                ->default(true),
-                            
-                            Forms\Components\Select::make('payment_method')
-                                ->label('Default Payment Method')
-                                ->helperText('Used only for tickets without a payment method')
-                                ->options($paymentOptions)
-                                ->default($defaultMethod)
-                                ->required(),
                         ];
                     })
                     ->action(function (Collection $records, array $data) {
@@ -505,13 +552,24 @@ class TicketResource extends Resource
                                 
                                 $record->tier->increment('quantity_sold');
                                 
+                                // ✅ NEW: Send notifications
+                                if ($record->client->email) {
+                                    dispatch(new SendTicketApprovedEmail($record->id))->afterResponse();
+                                }
+                                
+                                if ($record->has_whatsapp && $record->client->phone) {
+                                    dispatch(function() use ($record) {
+                                        WhatsAppController::deliverTicket($record);
+                                    })->afterResponse();
+                                }
+                                
                                 $approved++;
                             }
                         }
 
                         Notification::make()
                             ->title('Payments Approved')
-                            ->body("{$approved} ticket(s) have been activated")
+                            ->body("{$approved} ticket(s) have been activated and notifications sent")
                             ->success()
                             ->send();
                     }),

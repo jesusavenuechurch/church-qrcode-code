@@ -34,24 +34,24 @@ class TicketStatsWidget extends BaseWidget
 
         return [
             Stat::make('Pending Approvals', $pendingCount)
-                ->description('Tickets awaiting payment approval')
+                ->description('Awaiting payment verification')
                 ->descriptionIcon('heroicon-o-clock')
                 ->color($pendingCount > 0 ? 'warning' : 'success'),
 
             Stat::make('Active Tickets', $activeCount)
                 ->description('Ready for check-in')
                 ->descriptionIcon('heroicon-o-ticket')
+                ->color('primary'),
+
+            Stat::make('Total Revenue', number_format($totalRevenue, 2) . ' ' . config('constants.currency.code'))
+                ->description('Confirmed in ' . config('constants.currency.name'))
+                ->descriptionIcon('heroicon-o-banknotes')
                 ->color('success'),
 
-            Stat::make('Total Revenue', number_format($totalRevenue, 0) . ' UGX')
-                ->description('From completed payments')
-                ->descriptionIcon('heroicon-o-currency-dollar')
-                ->color('info'),
-
             Stat::make('Today\'s Registrations', $todayRegistrations)
-                ->description('New registrations today')
+                ->description('New signups today')
                 ->descriptionIcon('heroicon-o-arrow-trending-up')
-                ->color($todayRegistrations > 0 ? 'success' : 'gray'),
+                ->color('info'),
         ];
     }
 }
