@@ -15,7 +15,7 @@ return new class extends Migration
             $table->id();
             $table->foreignId('organization_id')->constrained('organizations')->onDelete('cascade');
             $table->string('full_name');
-            $table->string('email')->unique();
+            $table->string('email')->nullable();
             $table->string('phone')->nullable();
             $table->foreignId('created_by')->nullable()->constrained('users')->onDelete('set null'); // null = self-registered
             $table->text('notes')->nullable();
