@@ -26,6 +26,7 @@ class Event extends Model
         'allow_installments',
         'minimum_deposit_percentage',
         'installment_instructions',
+        'banner_image',
     ];
 
     protected $casts = [

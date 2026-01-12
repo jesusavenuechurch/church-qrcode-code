@@ -132,7 +132,26 @@ class EventResource extends Resource
                         ->unique(ignoreRecord: true)
                         ->afterStateUpdated(fn ($set) => $set('slug_locked', true))
                         ->helperText('Auto-generated from event name, editable'),
-
+                           
+                    Forms\Components\FileUpload::make('banner_image')
+                        ->label('Event Poster / Flyer')
+                        ->image()
+                        ->disk('public')
+                        ->directory('event-banners')
+                        ->maxSize(10240) 
+                        ->imageEditor() // Allows users to crop manually IF they want, but doesn't force it
+                        ->imageEditorAspectRatios([
+                            null, // Allows free-form aspect ratio (perfect for vertical posters)
+                            '16:9',
+                            '4:5',
+                        ])
+                        ->helperText('Upload the full event poster. No forced cropping. Max 10MB for high-quality zoom.')
+                        ->columnSpanFull()
+                        ->acceptedFileTypes(['image/jpeg', 'image/png', 'image/jpg', 'image/webp'])
+                        ->previewable(true)
+                        ->downloadable()
+                        ->openable(),
+                    
                     Forms\Components\Toggle::make('is_public')
                         ->label('Public Event')
                         ->default(true),
@@ -310,6 +329,13 @@ class EventResource extends Resource
                     ->visible(fn () => auth()->user()?->isSuperAdmin())
                     ->toggleable(isToggledHiddenByDefault: true)
                     ->searchable(),
+
+                Tables\Columns\IconColumn::make('banner_image')
+                    ->label('Banner')
+                    ->boolean()
+                    ->getStateUsing(fn ($record) => !empty($record->banner_image))
+                    ->toggleable(isToggledHiddenByDefault: true)
+                    ->tooltip(fn ($record) => $record->banner_image ? 'Has banner' : 'No banner'),
             ])
 
             ->actions([
