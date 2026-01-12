@@ -130,16 +130,10 @@
                                         <div class="flex justify-between items-start mb-3">
                                             <div class="flex-1">
                                                 <h4 class="font-bold text-gray-900 group-hover:text-blue-600 transition-colors">{{ $tier->tier_name }}</h4>
-                                                @if($tier->benefits)
-                                                    <div class="flex flex-wrap gap-1 mt-2">
-                                                        @foreach(array_slice(explode("\n", $tier->benefits), 0, 2) as $benefit)
-                                                            @if(trim($benefit))
-                                                            <span class="inline-block px-2 py-0.5 bg-blue-50 text-blue-600 text-[9px] font-bold rounded-md uppercase tracking-tighter">
-                                                                <i class="fas fa-check mr-1"></i>{{ trim($benefit) }}
-                                                            </span>
-                                                            @endif
-                                                        @endforeach
-                                                    </div>
+                                               @if($tier->description)
+                                                    <p class="text-xs text-gray-500 mt-1 leading-relaxed italic">
+                                                        {{ $tier->description }}
+                                                    </p>
                                                 @endif
                                             </div>
                                             <div class="text-right ml-2">
