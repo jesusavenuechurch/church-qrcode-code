@@ -102,6 +102,7 @@ class AdminPanelProvider extends PanelProvider
               //  Widgets\AccountWidget::class,
                 // Widgets\FilamentInfoWidget::class, // Commented out to clean up dashboard
               //  \App\Filament\Widgets\StatsOverview::class,
+             // \App\Filament\Widgets\ActionLauncher::class,
                 \App\Filament\Widgets\TicketStatsWidget::class,
                 \App\Filament\Widgets\PendingApprovalsWidget::class,
             ])

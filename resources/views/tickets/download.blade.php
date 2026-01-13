@@ -1,157 +1,183 @@
-<!-- resources/views/tickets/download.blade.php -->
 <!DOCTYPE html>
 <html lang="en">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Your Ticket - {{ $ticket->event->name }}</title>
+    <title>Ticket Hub - {{ $ticket->event->name }}</title>
     <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <style>
-        body { background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); }
-        .glass { backdrop-filter: blur(10px); background: rgba(255,255,255,0.1); }
+        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;700;900&display=swap');
+        body { 
+            font-family: 'Inter', sans-serif;
+            background: #0f172a; 
+        }
+        .glass-card { 
+            background: rgba(255, 255, 255, 0.03);
+            backdrop-filter: blur(20px);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+        }
     </style>
 </head>
-<body class="min-h-screen flex items-center justify-center p-4">
-    <div class="w-full max-w-md">
-        <!-- Header -->
-        <div class="text-center mb-8">
-            <h1 class="text-4xl font-bold text-white mb-2">🎫 Your Ticket</h1>
-            <p class="text-purple-100">{{ $ticket->event->name }}</p>
+<body class="min-h-screen flex items-center justify-center p-6 bg-[radial-gradient(ellipse_at_top,_var(--tw-gradient-stops))] from-slate-800 via-slate-900 to-black">
+    
+    <div class="w-full max-w-md animate-in fade-in zoom-in duration-700">
+        
+        <div class="text-center mb-10">
+            <div class="inline-flex items-center space-x-2 bg-white/5 border border-white/10 px-4 py-2 rounded-full mb-4">
+                <span class="relative flex h-2 w-2">
+                    <span class="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75"></span>
+                    <span class="relative inline-flex rounded-full h-2 w-2 bg-emerald-500"></span>
+                </span>
+                <span class="text-[10px] font-black uppercase tracking-[0.3em] text-emerald-400">Live Access Pass</span>
+            </div>
+            <h1 class="text-2xl font-black text-white uppercase tracking-tighter">{{ $ticket->event->name }}</h1>
         </div>
 
-        <!-- Main Card -->
-        <div class="glass rounded-2xl p-8 border border-white/20 backdrop-blur-md">
-            <!-- Ticket Info -->
-            <div class="bg-white/10 rounded-lg p-6 mb-6 border border-white/20">
-                <div class="text-center mb-4">
-                    <div class="text-sm text-purple-200 mb-2">Ticket for</div>
-                    <h2 class="text-2xl font-bold text-white">{{ $ticket->client->full_name }}</h2>
-                </div>
-
-                <div class="space-y-3 text-sm">
-                    <div class="flex justify-between text-purple-100">
-                        <span>Event</span>
-                        <span class="font-semibold text-white">{{ $ticket->event->name }}</span>
+        <div class="glass-card rounded-[2.5rem] overflow-hidden shadow-2xl">
+            
+            <div id="ticket-capture" class="p-8 pb-0">
+                <div class="bg-white rounded-[2rem] overflow-hidden shadow-xl">
+                    <div class="bg-gray-900 px-6 py-4 flex justify-between items-center">
+                        <span class="text-[9px] font-black text-gray-400 uppercase tracking-widest">{{ $ticket->event->organization->name }}</span>
+                        <span class="text-[9px] font-black text-white uppercase tracking-widest">{{ $ticket->tier->tier_name }}</span>
                     </div>
-                    <div class="flex justify-between text-purple-100">
-                        <span>Tier</span>
-                        <span class="font-semibold text-white">{{ $ticket->tier->tier_name }}</span>
-                    </div>
-                    <div class="flex justify-between text-purple-100">
-                        <span>Date</span>
-                        <span class="font-semibold text-white">{{ $ticket->event->event_date->format('M d, Y') }}</span>
-                    </div>
-                    <div class="flex justify-between text-purple-100">
-                        <span>Ticket #</span>
-                        <span class="font-semibold text-white font-mono text-xs">{{ $ticket->ticket_number }}</span>
-                    </div>
-                </div>
-            </div>
-
-            <!-- QR Code Preview -->
-            <div class="bg-white rounded-lg p-4 mb-6 text-center">
-                @if($ticket->qr_code_path)
-                    <img src="{{ Storage::url($ticket->qr_code_path) }}" alt="QR Code" class="w-48 h-48 mx-auto">
-                    <p class="text-xs text-gray-600 mt-2">Show this QR code at entry</p>
-                @else
-                    <div class="h-48 flex items-center justify-center text-gray-400">QR Code Loading...</div>
-                @endif
-            </div>
-
-            <!-- Preference Selection -->
-            <div class="mb-6">
-                <label class="block text-sm font-semibold text-white mb-3">How do you want your ticket?</label>
-
-                <!-- Already Printed Badge -->
-                @if($ticket->isPrinted())
-                    <div class="bg-green-500/20 border border-green-400 rounded-lg p-4 mb-4">
-                        <div class="text-sm text-green-100">
-                            <div class="font-semibold">✅ Ticket Printed</div>
-                            <div class="text-xs mt-1">Printed on {{ $ticket->printed_at->format('M d, Y') }}</div>
+                    
+                    <div class="p-8 text-center bg-white">
+                        <div class="relative inline-block group">
+                            @if($ticket->qr_code_path)
+                                <img src="{{ Storage::url($ticket->qr_code_path) }}" crossorigin="anonymous" alt="QR Code" class="w-48 h-48 mx-auto">
+                            @else
+                                <div class="w-48 h-48 flex items-center justify-center bg-gray-50 rounded-2xl border-2 border-dashed border-gray-100">
+                                    <i class="fas fa-qrcode text-gray-200 text-4xl"></i>
+                                </div>
+                            @endif
+                            <div class="absolute -top-2 -left-2 w-6 h-6 border-t-4 border-l-4 border-gray-900 rounded-tl-lg"></div>
+                            <div class="absolute -top-2 -right-2 w-6 h-6 border-t-4 border-right-4 border-gray-900 rounded-tr-lg"></div>
+                            <div class="absolute -bottom-2 -left-2 w-6 h-6 border-b-4 border-l-4 border-gray-900 rounded-bl-lg"></div>
+                            <div class="absolute -bottom-2 -right-2 w-6 h-6 border-b-4 border-r-4 border-gray-900 rounded-br-lg"></div>
+                        </div>
+                        
+                        <div class="mt-6">
+                            <p class="text-[10px] font-black text-gray-400 uppercase tracking-[0.2em] mb-1">Guest Name</p>
+                            <h2 class="text-xl font-black text-gray-900 uppercase tracking-tight">{{ $ticket->client->full_name }}</h2>
                         </div>
                     </div>
-                @endif
 
-                <!-- Options -->
-                <div class="space-y-3">
-                    <!-- Digital Option -->
-                    <button 
-                        type="button"
-                        onclick="selectPreference('digital')"
-                        class="w-full preference-btn digital-btn p-4 rounded-lg border-2 transition-all text-left {{ $ticket->ticket_preference === 'digital' ? 'border-blue-400 bg-blue-500/20' : 'border-white/30 hover:border-white/50' }}"
-                        :disabled="$ticket->isPrinted()"
-                    >
-                        <div class="font-semibold text-white">📱 Digital Only</div>
-                        <div class="text-sm text-purple-100 mt-1">Get QR code on your phone, no paper needed</div>
+                    <div class="px-8 py-6 bg-gray-50 border-t border-dashed border-gray-200 relative">
+                        <div class="absolute -left-3 top-[-12px] w-6 h-6 bg-[#1a2438] rounded-full"></div>
+                        <div class="absolute -right-3 top-[-12px] w-6 h-6 bg-[#1a2438] rounded-full"></div>
+                        
+                        <div class="grid grid-cols-2 gap-4">
+                            <div>
+                                <p class="text-[8px] font-black text-gray-400 uppercase tracking-widest">Ticket ID</p>
+                                <p class="text-xs font-bold text-gray-900 font-mono">{{ $ticket->ticket_number }}</p>
+                            </div>
+                            <div class="text-right">
+                                <p class="text-[8px] font-black text-gray-400 uppercase tracking-widest">Entry Date</p>
+                                <p class="text-xs font-bold text-gray-900 uppercase">{{ $ticket->event->event_date->format('M d, Y') }}</p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="p-8 space-y-6">
+                
+                <div class="space-y-4">
+                    <label class="block text-[10px] font-black text-gray-400 uppercase tracking-[0.2em] ml-1">Fulfillment Preference</label>
+                    
+                    <div class="grid grid-cols-1 gap-3">
+                        <button type="button" onclick="selectPreference('digital')" 
+                            class="group relative overflow-hidden p-4 rounded-2xl border-2 transition-all text-left {{ $ticket->ticket_preference === 'digital' ? 'border-emerald-500 bg-emerald-500/10' : 'border-white/5 bg-white/5 hover:bg-white/10' }}"
+                            {{ $ticket->isPrinted() ? 'disabled' : '' }}>
+                            <div class="flex items-center justify-between pointer-events-none">
+                                <div class="flex items-center space-x-3">
+                                    <div class="w-10 h-10 rounded-xl flex items-center justify-center {{ $ticket->ticket_preference === 'digital' ? 'bg-emerald-500 text-white' : 'bg-white/10 text-gray-400' }}">
+                                        <i class="fas fa-mobile-alt"></i>
+                                    </div>
+                                    <div>
+                                        <div class="text-[11px] font-black text-white uppercase tracking-tight">Digital Pass</div>
+                                        <div class="text-[9px] font-bold text-gray-500 uppercase tracking-tighter">Smartphone Ready</div>
+                                    </div>
+                                </div>
+                                @if($ticket->ticket_preference === 'digital')
+                                    <i class="fas fa-check-circle text-emerald-500"></i>
+                                @endif
+                            </div>
+                        </button>
+
+                        {{-- <button type="button" onclick="selectPreference('print')" 
+                            class="group relative overflow-hidden p-4 rounded-2xl border-2 transition-all text-left {{ $ticket->ticket_preference === 'print' ? 'border-amber-500 bg-amber-500/10' : 'border-white/5 bg-white/5 hover:bg-white/10' }}"
+                            {{ $ticket->isPrinted() ? 'disabled' : '' }}>
+                            <div class="flex items-center justify-between pointer-events-none">
+                                <div class="flex items-center space-x-3">
+                                    <div class="w-10 h-10 rounded-xl flex items-center justify-center {{ $ticket->ticket_preference === 'print' ? 'bg-amber-500 text-white' : 'bg-white/10 text-gray-400' }}">
+                                        <i class="fas fa-print"></i>
+                                    </div>
+                                    <div>
+                                        <div class="text-[11px] font-black text-white uppercase tracking-tight">Physical Print</div>
+                                        <div class="text-[9px] font-bold text-gray-500 uppercase tracking-tighter">Collect from Admin</div>
+                                    </div>
+                                </div>
+                                @if($ticket->ticket_preference === 'print')
+                                    <i class="fas fa-circle-notch fa-spin text-amber-500"></i>
+                                @endif
+                            </div>
+                        </button> --}}
+                    </div>
+                </div>
+
+                <div class="pt-4 space-y-3">
+                    <button id="download-png"
+                            class="flex items-center justify-center w-full bg-emerald-600 text-white font-black py-4 rounded-[1.2rem] shadow-lg hover:bg-emerald-700 transition-all uppercase tracking-[0.2em] text-[10px]">
+                        <i class="fas fa-camera mr-3"></i> Save to Gallery (PNG)
                     </button>
 
-                    <!-- Print Option -->
-                    <button 
-                        type="button"
-                        onclick="selectPreference('print')"
-                        class="w-full preference-btn print-btn p-4 rounded-lg border-2 transition-all text-left {{ $ticket->ticket_preference === 'print' ? 'border-yellow-400 bg-yellow-500/20' : 'border-white/30 hover:border-white/50' }}"
-                        :disabled="$ticket->isPrinted()"
-                    >
-                        <div class="font-semibold text-white">🖨️ Print Physical Ticket</div>
-                        <div class="text-sm text-purple-100 mt-1">Admin will print and give you a physical ticket</div>
-                    </button>
+                    <a href="{{ route('ticket.avatar.download', $qrCode) }}"
+                       class="flex items-center justify-center w-full bg-white/10 border border-white/20 text-white font-black py-4 rounded-[1.2rem] hover:bg-white/20 transition-all uppercase tracking-[0.2em] text-[10px]">
+                        <i class="fas fa-file-pdf mr-3 text-red-400"></i> Download PDF Document
+                    </a>
                 </div>
 
-                <!-- Disabled Message if Printed -->
-                @if($ticket->isPrinted())
-                    <p class="text-xs text-yellow-200 mt-3">⚠️ Preference cannot be changed (ticket already printed)</p>
-                @endif
-            </div>
-
-            <!-- Download Button -->
-            <a 
-                href="{{ route('ticket.avatar.download', $qrCode) }}"
-                class="w-full bg-gradient-to-r from-blue-500 to-purple-500 hover:from-blue-600 hover:to-purple-600 text-white font-bold py-3 rounded-lg text-center block transition-all mb-4"
-            >
-                📥 Download Ticket (PDF)
-            </a>
-
-            <!-- Info Messages -->
-            <div class="space-y-2 text-xs text-purple-200">
-                @if($ticket->ticket_preference === 'digital')
-                    <div class="bg-blue-500/10 border border-blue-400 rounded p-3">
-                        📱 You selected digital. Show the QR code on your phone at entry.
-                    </div>
-                @elseif($ticket->ticket_preference === 'print')
-                    @if($ticket->isPrinted())
-                        <div class="bg-green-500/10 border border-green-400 rounded p-3">
-                            ✅ Your ticket has been printed and is ready to pick up!
-                        </div>
-                    @else
-                        <div class="bg-yellow-500/10 border border-yellow-400 rounded p-3">
-                            ⏳ You selected print. Admin will print and notify you when ready.
-                        </div>
-                    @endif
-                @endif
-            </div>
-
-            <!-- Status -->
-            <div class="mt-6 pt-6 border-t border-white/20 text-center text-sm text-purple-200">
-                <p>Ticket Status: 
-                    <span class="font-semibold text-white">
-                        @if($ticket->checked_in_at)
-                            ✅ Checked In
-                        @else
-                            🎫 Active
-                        @endif
-                    </span>
-                </p>
             </div>
         </div>
 
-        <!-- Footer -->
-        <div class="text-center mt-6 text-purple-100 text-sm">
-            <p>{{ $ticket->event->organization->name }}</p>
-            <p class="text-xs text-purple-300">{{ $ticket->event->location }}</p>
+        <div class="text-center mt-10">
+            <p class="text-[10px] font-black text-gray-500 uppercase tracking-widest">{{ $ticket->event->organization->name }}</p>
+            <p class="text-[9px] font-bold text-gray-600 mt-1 uppercase tracking-tighter">{{ $ticket->event->location }}</p>
         </div>
     </div>
 
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
     <script>
+        // PNG Generation Logic
+        document.getElementById('download-png').addEventListener('click', function() {
+            const ticketArea = document.getElementById('ticket-capture');
+            const btn = this;
+            
+            btn.innerHTML = '<i class="fas fa-circle-notch fa-spin mr-3"></i> Generating...';
+            btn.disabled = true;
+
+            html2canvas(ticketArea, {
+                scale: 3, 
+                useCORS: true, 
+                backgroundColor: null,
+            }).then(canvas => {
+                const link = document.createElement('a');
+                link.download = 'Ticket-{{ $ticket->ticket_number }}.png';
+                link.href = canvas.toDataURL('image/png', 1.0);
+                link.click();
+                
+                btn.innerHTML = '<i class="fas fa-camera mr-3"></i> Save to Gallery (PNG)';
+                btn.disabled = false;
+            }).catch(err => {
+                console.error('Capture failed:', err);
+                btn.disabled = false;
+            });
+        });
+
+        // Preference Update Logic
         function selectPreference(preference) {
             @if(!$ticket->isPrinted())
                 fetch("{{ route('ticket.update-preference', $qrCode) }}", {
@@ -165,23 +191,9 @@
                 .then(response => response.json())
                 .then(data => {
                     if (data.success) {
-                        // Update UI
-                        document.querySelectorAll('.preference-btn').forEach(btn => {
-                            btn.classList.remove('border-blue-400', 'border-yellow-400', 'bg-blue-500/20', 'bg-yellow-500/20');
-                            btn.classList.add('border-white/30');
-                        });
-                        
-                        if (preference === 'digital') {
-                            document.querySelector('.digital-btn').classList.add('border-blue-400', 'bg-blue-500/20');
-                        } else {
-                            document.querySelector('.print-btn').classList.add('border-yellow-400', 'bg-yellow-500/20');
-                        }
-
-                        // Show message
                         location.reload();
                     }
-                })
-                .catch(error => console.error('Error:', error));
+                });
             @endif
         }
     </script>

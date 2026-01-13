@@ -14,194 +14,182 @@
             box-sizing: border-box; 
         }
         body {
-            font-family: 'DejaVu Sans', Arial, sans-serif;
-            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-            padding: 40px;
-            min-height: 100vh;
+            font-family: 'Helvetica', Arial, sans-serif;
+            background-color: #f8fafc;
+            padding: 60px 40px;
         }
         
         .container {
-            max-width: 400px;
+            max-width: 500px;
             margin: 0 auto;
         }
-        
-        /* Header */
-        .header {
-            text-align: center;
-            margin-bottom: 30px;
-        }
-        
-        .header h1 {
-            font-size: 32px;
-            font-weight: bold;
+
+        /* The Physical Ticket Look */
+        .ticket-wrapper {
+            background-color: #0f172a; /* Slate 900 */
+            border-radius: 40px;
+            overflow: hidden;
+            position: relative;
             color: white;
-            margin-bottom: 8px;
+            box-shadow: 0 20px 50px rgba(0,0,0,0.1);
         }
-        
-        .header .event-name {
-            color: rgba(221, 214, 254, 1);
-            font-size: 14px;
-        }
-        
-        /* Main Card */
-        .card {
-            background: rgba(255, 255, 255, 0.1);
-            backdrop-filter: blur(10px);
-            border-radius: 20px;
-            padding: 30px;
-            border: 1px solid rgba(255, 255, 255, 0.2);
-        }
-        
-        /* Ticket Info Section */
-        .ticket-info {
-            background: rgba(255, 255, 255, 0.1);
-            border-radius: 12px;
-            padding: 24px;
-            margin-bottom: 24px;
-            border: 1px solid rgba(255, 255, 255, 0.2);
-        }
-        
-        .ticket-info .label {
+
+        /* Top Section: Event Brand */
+        .brand-section {
+            padding: 40px 40px 20px 40px;
             text-align: center;
-            font-size: 11px;
-            color: rgba(196, 181, 253, 1);
-            margin-bottom: 8px;
         }
-        
-        .ticket-info .client-name {
+
+        .org-tag {
+            font-size: 10px;
+            font-weight: 900;
+            text-transform: uppercase;
+            letter-spacing: 4px;
+            color: #94a3b8;
+            margin-bottom: 15px;
+        }
+
+        .event-title {
+            font-size: 28px;
+            font-weight: 900;
+            letter-spacing: -1px;
+            color: #ffffff;
+            line-height: 1.1;
+        }
+
+        /* Middle Section: Holder Info */
+        .holder-section {
+            padding: 0 40px;
             text-align: center;
+        }
+
+        .holder-name {
             font-size: 22px;
-            font-weight: bold;
-            color: white;
-            margin-bottom: 16px;
+            font-weight: 700;
+            color: #38bdf8; /* Sky 400 */
+            margin: 15px 0;
+            text-transform: uppercase;
         }
-        
-        .info-row {
-            display: flex;
-            justify-content: space-between;
-            padding: 10px 0;
+
+        /* Detail Grid */
+        .details-table {
+            width: 100%;
+            margin: 20px 0;
+            border-top: 1px solid #1e293b;
+            border-bottom: 1px solid #1e293b;
+            padding: 20px 0;
+        }
+
+        .details-table td {
+            padding: 8px 0;
+        }
+
+        .label {
+            font-size: 9px;
+            font-weight: 900;
+            text-transform: uppercase;
+            letter-spacing: 2px;
+            color: #64748b;
+        }
+
+        .value {
             font-size: 12px;
+            font-weight: 700;
+            color: #f1f5f9;
         }
-        
-        .info-label {
-            color: rgba(196, 181, 253, 1);
-        }
-        
-        .info-value {
-            font-weight: 600;
-            color: white;
-            text-align: right;
-            font-size: 11px;
-        }
-        
-        /* QR Code Section */
+
+        /* QR Section: The "Stub" */
         .qr-section {
-            background: white;
-            border-radius: 12px;
-            padding: 16px;
+            background-color: #ffffff;
+            margin: 20px 40px 40px 40px;
+            padding: 30px;
+            border-radius: 25px;
             text-align: center;
-            margin-bottom: 24px;
         }
-        
-        .qr-section img {
-            display: block;
-            width: 192px;
-            height: 192px;
-            margin: 0 auto;
+
+        .qr-image {
+            width: 200px;
+            height: 200px;
+            margin-bottom: 15px;
         }
-        
-        .qr-placeholder {
-            width: 192px;
-            height: 192px;
-            background: #f0f0f0;
-            margin: 0 auto;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            border-radius: 8px;
+
+        .ticket-id-footer {
+            font-family: 'Courier', monospace;
+            font-size: 11px;
+            font-weight: bold;
+            color: #0f172a;
+            letter-spacing: 1px;
         }
-        
-        .qr-text {
-            margin-top: 8px;
+
+        /* Stub Perforation Effect */
+        .perforation {
+            height: 2px;
+            border-top: 2px dashed #1e293b;
+            margin: 0 20px;
+            position: relative;
+        }
+
+        .perforation:before, .perforation:after {
+            content: "";
+            position: absolute;
+            top: -11px;
+            width: 20px;
+            height: 20px;
+            background-color: #f8fafc;
+            border-radius: 50%;
+        }
+        .perforation:before { left: -31px; }
+        .perforation:after { right: -31px; }
+
+        .footer-note {
+            text-align: center;
+            margin-top: 30px;
             font-size: 10px;
-            color: #666;
-        }
-        
-        /* Status Section */
-        .status-section {
-            margin-top: 24px;
-            padding-top: 24px;
-            border-top: 1px solid rgba(255, 255, 255, 0.2);
-            text-align: center;
-            font-size: 12px;
-            color: rgba(196, 181, 253, 1);
-        }
-        
-        .status-value {
-            font-weight: 600;
-            color: white;
-        }
-        
-        /* Footer */
-        .footer {
-            text-align: center;
-            margin-top: 24px;
-            font-size: 12px;
-            color: rgba(196, 181, 253, 1);
-        }
-        
-        .footer .org-name {
-            font-size: 13px;
-            margin-bottom: 4px;
-        }
-        
-        .footer .location {
-            font-size: 10px;
-            color: rgba(167, 139, 250, 1);
+            font-weight: 700;
+            color: #94a3b8;
+            text-transform: uppercase;
+            letter-spacing: 2px;
         }
     </style>
 </head>
 <body>
     <div class="container">
-        <!-- Header -->
-        <div class="header">
-            <h1>🎫 Your Ticket</h1>
-            <div class="event-name">{{ $event->name }}</div>
-        </div>
-        
-        <!-- Main Card -->
-        <div class="card">
-            <!-- Ticket Info -->
-            <div class="ticket-info">
-                <div class="label">Ticket for</div>
-                <div class="client-name">{{ $client->full_name }}</div>
-                
-                <div class="info-row">
-                    <span class="info-label">Event</span>
-                    <span class="info-value">{{ $event->name }}</span>
-                </div>
-                
-                <div class="info-row">
-                    <span class="info-label">Tier</span>
-                    <span class="info-value">{{ $tier->tier_name }}</span>
-                </div>
-                
-                @if($event->event_date)
-                <div class="info-row">
-                    <span class="info-label">Date</span>
-                    <span class="info-value">{{ $event->event_date->format('M d, Y') }}</span>
-                </div>
-                @endif
-                
-                <div class="info-row">
-                    <span class="info-label">Ticket #</span>
-                    <span class="info-value" style="font-family: 'Courier New', monospace; font-size: 9px;">
-                        {{ $ticket->ticket_number }}
-                    </span>
-                </div>
+        <div class="ticket-wrapper">
+            <div class="brand-section">
+                <div class="org-tag">{{ $organization->name }}</div>
+                <h1 class="event-title">{{ $event->name }}</h1>
             </div>
-            
-            <!-- QR Code -->
+
+            <div class="holder-section">
+                <div class="label" style="color: #38bdf8;">Official Guest</div>
+                <div class="holder-name">{{ $client->full_name }}</div>
+
+                <table class="details-table">
+                    <tr>
+                        <td width="50%" align="left">
+                            <div class="label">Tier</div>
+                            <div class="value">{{ $tier->tier_name }}</div>
+                        </td>
+                        <td width="50%" align="right">
+                            <div class="label">Date</div>
+                            <div class="value">{{ $event->event_date ? $event->event_date->format('d M Y') : 'TBA' }}</div>
+                        </td>
+                    </tr>
+                    <tr>
+                        <td width="50%" align="left">
+                            <div class="label">Location</div>
+                            <div class="value">{{ $event->location ?? 'Announced Soon' }}</div>
+                        </td>
+                        <td width="50%" align="right">
+                            <div class="label">Status</div>
+                            <div class="value">ACTIVE PASS</div>
+                        </td>
+                    </tr>
+                </table>
+            </div>
+
+            <div class="perforation"></div>
+
             <div class="qr-section">
                 @if($ticket->qr_code_path && file_exists(public_path('storage/' . $ticket->qr_code_path)))
                     @php
@@ -209,35 +197,18 @@
                         $qrImageData = base64_encode(file_get_contents($qrImagePath));
                         $qrSrc = 'data:image/png;base64,' . $qrImageData;
                     @endphp
-                    <img src="{{ $qrSrc }}" alt="QR Code">
+                    <img src="{{ $qrSrc }}" class="qr-image" alt="QR Code">
                 @else
-                    <div class="qr-placeholder">
-                        <div style="color: #999; font-size: 11px;">QR Code</div>
-                    </div>
+                    <div style="width: 200px; height: 200px; background: #f1f5f9; margin: 0 auto 15px auto; line-height: 200px; color: #cbd5e1; font-weight: bold; border-radius: 15px;">QR CODE</div>
                 @endif
                 
-                <div class="qr-text">Show this QR code at entry</div>
-            </div>
-            
-            <!-- Status -->
-            <div class="status-section">
-                Ticket Status: 
-                <span class="status-value">
-                    @if($ticket->checked_in_at)
-                        ✅ Checked In
-                    @else
-                        🎫 Active
-                    @endif
-                </span>
+                <div class="ticket-id-footer">#{{ $ticket->ticket_number }}</div>
+                <div class="label" style="color: #94a3b8; margin-top: 5px; letter-spacing: 1px;">Scan at Entrance</div>
             </div>
         </div>
-        
-        <!-- Footer -->
-        <div class="footer">
-            <div class="org-name">{{ $organization->name }}</div>
-            @if($event->location)
-                <div class="location">{{ $event->location }}</div>
-            @endif
+
+        <div class="footer-note">
+            Please present this digital or printed pass for entry
         </div>
     </div>
 </body>
