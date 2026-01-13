@@ -2,11 +2,11 @@
 <html>
 <head>
     <meta charset="UTF-8">
-    <title>Ticket - {{ $ticket->ticket_number }}</title>
+    <title>Ventiq Pass - {{ $ticket->ticket_number }}</title>
     <style>
         @page { 
             margin: 0; 
-            size: A4 portrait;
+            size: A4 landscape;
         }
         * { 
             margin: 0; 
@@ -15,201 +15,206 @@
         }
         body {
             font-family: 'Helvetica', Arial, sans-serif;
-            background-color: #f8fafc;
-            padding: 60px 40px;
+            background-color: #000000;
+            padding: 60px;
         }
         
-        .container {
-            max-width: 500px;
-            margin: 0 auto;
-        }
+        @php
+            /* Syncing logic with your web view */
+            $isVip = str_contains(strtolower($ticket->tier->tier_name), 'vip');
+            $accentColor = $isVip ? '#D4AF37' : '#10b981';
+        @endphp
 
-        /* The Physical Ticket Look */
         .ticket-wrapper {
-            background-color: #0f172a; /* Slate 900 */
+            width: 950px;
+            margin: 0 auto;
+            background-color: #ffffff;
             border-radius: 40px;
             overflow: hidden;
             position: relative;
-            color: white;
-            box-shadow: 0 20px 50px rgba(0,0,0,0.1);
         }
 
-        /* Top Section: Event Brand */
-        .brand-section {
-            padding: 40px 40px 20px 40px;
-            text-align: center;
-        }
-
-        .org-tag {
-            font-size: 10px;
-            font-weight: 900;
-            text-transform: uppercase;
-            letter-spacing: 4px;
-            color: #94a3b8;
-            margin-bottom: 15px;
-        }
-
-        .event-title {
-            font-size: 28px;
-            font-weight: 900;
-            letter-spacing: -1px;
-            color: #ffffff;
-            line-height: 1.1;
-        }
-
-        /* Middle Section: Holder Info */
-        .holder-section {
-            padding: 0 40px;
-            text-align: center;
-        }
-
-        .holder-name {
-            font-size: 22px;
-            font-weight: 700;
-            color: #38bdf8; /* Sky 400 */
-            margin: 15px 0;
-            text-transform: uppercase;
-        }
-
-        /* Detail Grid */
-        .details-table {
+        /* Layout Table */
+        .main-table {
             width: 100%;
-            margin: 20px 0;
-            border-top: 1px solid #1e293b;
-            border-bottom: 1px solid #1e293b;
-            padding: 20px 0;
+            border-collapse: collapse;
         }
 
-        .details-table td {
-            padding: 8px 0;
-        }
-
-        .label {
-            font-size: 9px;
-            font-weight: 900;
-            text-transform: uppercase;
-            letter-spacing: 2px;
-            color: #64748b;
-        }
-
-        .value {
-            font-size: 12px;
-            font-weight: 700;
-            color: #f1f5f9;
-        }
-
-        /* QR Section: The "Stub" */
-        .qr-section {
-            background-color: #ffffff;
-            margin: 20px 40px 40px 40px;
-            padding: 30px;
-            border-radius: 25px;
-            text-align: center;
-        }
-
-        .qr-image {
-            width: 200px;
-            height: 200px;
-            margin-bottom: 15px;
-        }
-
-        .ticket-id-footer {
-            font-family: 'Courier', monospace;
-            font-size: 11px;
-            font-weight: bold;
-            color: #0f172a;
-            letter-spacing: 1px;
-        }
-
-        /* Stub Perforation Effect */
-        .perforation {
-            height: 2px;
-            border-top: 2px dashed #1e293b;
-            margin: 0 20px;
+        /* Left Content */
+        .info-side {
+            width: 65%;
+            padding: 60px;
             position: relative;
         }
 
-        .perforation:before, .perforation:after {
-            content: "";
+        .watermark {
             position: absolute;
-            top: -11px;
-            width: 20px;
-            height: 20px;
-            background-color: #f8fafc;
-            border-radius: 50%;
+            bottom: -30px;
+            left: -30px;
+            font-size: 140px;
+            font-weight: 900;
+            color: rgba(15, 23, 42, 0.03); /* Matching the web opacity */
+            font-style: italic;
+            text-transform: uppercase;
         }
-        .perforation:before { left: -31px; }
-        .perforation:after { right: -31px; }
 
-        .footer-note {
-            text-align: center;
-            margin-top: 30px;
+        .tier-badge {
+            background-color: {{ $accentColor }};
+            color: #ffffff;
+            padding: 8px 16px;
+            border-radius: 10px;
+            font-size: 12px;
+            font-weight: 900;
+            display: inline-block;
+            margin-bottom: 30px;
+            text-transform: uppercase;
+            letter-spacing: 2px;
+        }
+
+        .event-name {
+            font-size: 38px;
+            font-weight: 900;
+            color: #0f172a;
+            letter-spacing: -1.5px;
+            margin-bottom: 50px;
+            text-transform: uppercase;
+        }
+
+        .label {
             font-size: 10px;
             font-weight: 700;
             color: #94a3b8;
             text-transform: uppercase;
             letter-spacing: 2px;
+            margin-bottom: 8px;
+        }
+
+        .value {
+            font-size: 18px;
+            font-weight: 800;
+            color: #0f172a;
+            text-transform: uppercase;
+            margin-bottom: 35px;
+        }
+
+        /* Right Stub */
+        .qr-side {
+            width: 35%;
+            background-color: #f8fafc;
+            padding: 60px 40px;
+            text-align: center;
+            border-left: 2px dashed #e2e8f0;
+            vertical-align: middle;
+        }
+
+        .qr-box {
+            background: #ffffff;
+            padding: 25px;
+            border-radius: 30px;
+            border: 1px solid #e2e8f0;
+            display: inline-block;
+            margin-bottom: 25px;
+        }
+
+        .qr-img {
+            width: 180px;
+            height: 180px;
+        }
+
+        .scan-text {
+            font-size: 10px;
+            font-weight: 900;
+            color: #94a3b8;
+            text-transform: uppercase;
+            letter-spacing: 3px;
+        }
+
+        /* Perforation circles (The physical ticket holes) */
+        .hole {
+            position: absolute;
+            width: 36px;
+            height: 36px;
+            background-color: #000000;
+            border-radius: 50%;
+            right: 33.3%;
+            z-index: 20;
+        }
+        .hole-top { top: -18px; }
+        .hole-bottom { bottom: -18px; }
+
+        .system-id {
+            margin-top: 50px;
+            font-size: 11px;
+            font-weight: 700;
+            color: #cbd5e1;
+            letter-spacing: 1px;
         }
     </style>
 </head>
 <body>
-    <div class="container">
-        <div class="ticket-wrapper">
-            <div class="brand-section">
-                <div class="org-tag">{{ $organization->name }}</div>
-                <h1 class="event-title">{{ $event->name }}</h1>
-            </div>
 
-            <div class="holder-section">
-                <div class="label" style="color: #38bdf8;">Official Guest</div>
-                <div class="holder-name">{{ $client->full_name }}</div>
+    <div class="ticket-wrapper">
+        <div class="hole hole-top"></div>
+        <div class="hole hole-bottom"></div>
 
-                <table class="details-table">
-                    <tr>
-                        <td width="50%" align="left">
-                            <div class="label">Tier</div>
-                            <div class="value">{{ $tier->tier_name }}</div>
-                        </td>
-                        <td width="50%" align="right">
-                            <div class="label">Date</div>
-                            <div class="value">{{ $event->event_date ? $event->event_date->format('d M Y') : 'TBA' }}</div>
-                        </td>
-                    </tr>
-                    <tr>
-                        <td width="50%" align="left">
-                            <div class="label">Location</div>
-                            <div class="value">{{ $event->location ?? 'Announced Soon' }}</div>
-                        </td>
-                        <td width="50%" align="right">
-                            <div class="label">Status</div>
-                            <div class="value">ACTIVE PASS</div>
-                        </td>
-                    </tr>
-                </table>
-            </div>
+        <table class="main-table">
+            <tr>
+                <td class="info-side">
+                    <div class="watermark">VENTIQ</div>
+                    
+                    <div style="position: relative; z-index: 10;">
+                        <div class="tier-badge">{{ $ticket->tier->tier_name }}</div>
+                        <h1 class="event-name">{{ $ticket->event->name }}</h1>
 
-            <div class="perforation"></div>
+                        <table width="100%" border="0">
+                            <tr>
+                                <td width="50%">
+                                    <div class="label">Guest Name</div>
+                                    <div class="value">{{ $ticket->client->full_name }}</div>
+                                </td>
+                                <td width="50%">
+                                    <div class="label">Event Date</div>
+                                    <div class="value">{{ $ticket->event->event_date->format('d M Y') }}</div>
+                                </td>
+                            </tr>
+                            <tr>
+                                <td colspan="2">
+                                    <div class="label">Venue Location</div>
+                                    <div class="value" style="margin-bottom: 0;">{{ $ticket->event->location }}</div>
+                                </td>
+                            </tr>
+                        </table>
 
-            <div class="qr-section">
-                @if($ticket->qr_code_path && file_exists(public_path('storage/' . $ticket->qr_code_path)))
-                    @php
-                        $qrImagePath = public_path('storage/' . $ticket->qr_code_path);
-                        $qrImageData = base64_encode(file_get_contents($qrImagePath));
-                        $qrSrc = 'data:image/png;base64,' . $qrImageData;
-                    @endphp
-                    <img src="{{ $qrSrc }}" class="qr-image" alt="QR Code">
-                @else
-                    <div style="width: 200px; height: 200px; background: #f1f5f9; margin: 0 auto 15px auto; line-height: 200px; color: #cbd5e1; font-weight: bold; border-radius: 15px;">QR CODE</div>
-                @endif
-                
-                <div class="ticket-id-footer">#{{ $ticket->ticket_number }}</div>
-                <div class="label" style="color: #94a3b8; margin-top: 5px; letter-spacing: 1px;">Scan at Entrance</div>
-            </div>
-        </div>
+                        <div class="system-id">
+                            <span style="color: {{ $accentColor }}">●</span> 
+                            SECURE PASS ID: {{ $ticket->ticket_number }}
+                        </div>
+                    </div>
+                </td>
 
-        <div class="footer-note">
-            Please present this digital or printed pass for entry
-        </div>
+                <td class="qr-side">
+                    <div class="qr-box">
+                        @if($ticket->qr_code_path)
+                            @php
+                                $path = storage_path('app/public/' . $ticket->qr_code_path);
+                                $type = pathinfo($path, PATHINFO_EXTENSION);
+                                $data = file_get_contents($path);
+                                $base64 = 'data:image/' . $type . ';base64,' . base64_encode($data);
+                            @endphp
+                            <img src="{{ $base64 }}" class="qr-img">
+                        @endif
+                    </div>
+                    
+                    <div class="scan-text">Scan for Entry</div>
+                    
+                    <div style="margin-top: 45px; opacity: 0.3;">
+                        <span style="font-size: 8px; font-weight: bold; color: #000; text-transform: uppercase;">Powered by</span><br>
+                        <span style="font-size: 12px; font-weight: 900; color: #000; letter-spacing: -1px;">VENTIQ</span>
+                    </div>
+                </td>
+            </tr>
+        </table>
     </div>
+
 </body>
 </html>
