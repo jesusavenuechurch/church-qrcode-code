@@ -76,41 +76,60 @@ class TicketResource extends Resource
                     ->colors(['info' => 'active', 'success' => 'checked_in', 'danger' => 'refunded']),
             ])
             ->actions([
-                // STANDALONE APPROVE BUTTON (Your Original Logic)
-                Tables\Actions\Action::make('approve_payment')
-                    ->label('Approve')
-                    ->icon('heroicon-m-check-badge')
-                    ->color('success')
-                    ->button()
-                    ->visible(fn ($record) =>
-                        ($record->payment_status === 'pending' || $record->payment_status === 'partial')
-                        && auth()->user()?->hasPermissionTo('approve_payment')
-                        && $record->hasPendingPayments()
-                    )
-                    ->requiresConfirmation()
-                    ->modalHeading('Approve Payment')
-                    ->modalDescription('Review and approve the pending payment')
-                    ->form(fn($record) => static::getOriginalApproveForm($record))
-                    ->action(fn(Ticket $record, array $data) => static::handleOriginalApproval($record, $data)),
+    // 1. Standalone Approve Button (Your original logic restored)
+    Tables\Actions\Action::make('approve_payment')
+        ->label('Approve')
+        ->icon('heroicon-m-check-badge')
+        ->color('success')
+        ->button()
+        ->visible(fn ($record) =>
+            ($record->payment_status === 'pending' || $record->payment_status === 'partial')
+            && auth()->user()?->hasPermissionTo('approve_payment')
+            && $record->hasPendingPayments()
+        )
+        ->requiresConfirmation()
+        ->modalHeading('Approve Payment')
+        ->form(fn($record) => static::getOriginalApproveForm($record))
+        ->action(fn(Ticket $record, array $data) => static::handleOriginalApproval($record, $data)),
 
-                Tables\Actions\ActionGroup::make([
-                    Tables\Actions\ViewAction::make()->slideOver(),
-                    Tables\Actions\EditAction::make()->slideOver(),
-                    
-                    Tables\Actions\Action::make('resend_whatsapp')
-                        ->label('Resend WhatsApp')
-                        ->icon('heroicon-o-chat-bubble-left-right')
-                        ->color('success')
-                        ->visible(fn ($record) => $record->payment_status === 'completed' && $record->has_whatsapp)
-                        ->action(fn ($record) => WhatsAppController::deliverTicket($record)),
+    // 2. The "Send & Links" Group
+    Tables\Actions\ActionGroup::make([
+        // FIXED: This now points to your actual download route
+        Tables\Actions\Action::make('preview_pass')
+            ->label('View Public Pass')
+            ->icon('heroicon-o-arrow-top-right-on-square')
+            ->url(fn ($record) => route('ticket.download', $record->qr_code))
+            ->openUrlInNewTab(),
 
-                    Tables\Actions\Action::make('preview_pass')
-                        ->label('Live Ticket')
-                        ->icon('heroicon-o-arrow-top-right-on-square')
-                        ->url(fn ($record) => route('ticket.download', $record->qr_code))
-                        ->openUrlInNewTab(),
-                ])->icon('heroicon-m-ellipsis-vertical')->button()->label('More'),
-            ]);
+        // RESTORED: Your Copy Link Logic
+        Tables\Actions\Action::make('copy_link')
+            ->label('Copy Download Link')
+            ->icon('heroicon-o-link')
+            ->modalHeading('Ticket Download Link')
+            ->modalContent(fn ($record) => view(
+                'filament.modals.ticket-link', // Ensure this blade view exists
+                [
+                    'ticket' => $record,
+                    'link' => route('ticket.download', $record->qr_code),
+                ]
+            ))
+            ->modalSubmitAction(false),
+
+        Tables\Actions\Action::make('resend_whatsapp')
+            ->label('Resend WhatsApp')
+            ->icon('heroicon-o-chat-bubble-left-right')
+            ->color('success')
+            ->visible(fn ($record) => $record->payment_status === 'completed' && $record->has_whatsapp)
+            ->action(fn ($record) => \App\Http\Controllers\WhatsAppController::deliverTicket($record)),
+
+        Tables\Actions\EditAction::make()->slideOver(),
+        Tables\Actions\DeleteAction::make(),
+    ])
+    ->icon('heroicon-m-ellipsis-vertical')
+    ->color('gray')
+    ->button()
+    ->label('Options'),
+]);
     }
 
     /* ------------------------------------------------------------
