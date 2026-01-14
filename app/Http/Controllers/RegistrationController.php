@@ -78,7 +78,6 @@ class RegistrationController extends Controller
             'email' => 'nullable|email|max:255',
             'phone' => 'required|string|regex:/^\+266[0-9]{8}$/',
             'terms' => 'accepted',
-            // ✅ NEW: WhatsApp delivery preference
             'has_whatsapp' => 'nullable|boolean',
             'preferred_delivery' => 'nullable|in:email,whatsapp,both',
         ];
@@ -111,7 +110,7 @@ class RegistrationController extends Controller
                 ['phone' => $validated['phone'], 'organization_id' => $organization->id],
                 [
                     'full_name' => $validated['full_name'],
-                    'email' => $validated['email'],
+                    'email' => $validated['email'] ?? null,
                     'status' => 'active',
                     'notes' => 'Self-registered via public event page',
                     'created_by' => null,
@@ -121,7 +120,7 @@ class RegistrationController extends Controller
             if (!$primaryClient->wasRecentlyCreated) {
                 $primaryClient->update([
                     'full_name' => $validated['full_name'],
-                    'email' => $validated['email'],
+                    'email' => $validated['email'] ?? null,
                 ]);
             }
 
@@ -150,7 +149,7 @@ class RegistrationController extends Controller
             $ticketStatus = $isFree ? 'active' : 'pending';
             $paymentStatus = $isFree ? 'completed' : ($paymentType === 'deposit' ? 'partial' : 'pending');
 
-            // ✅ NEW: Determine delivery preference
+            // Determine delivery preference
             $hasWhatsApp = $request->has('has_whatsapp') && $request->has_whatsapp;
             $preferredDelivery = $this->determinePreferredDelivery($request, $validated);
 
@@ -196,10 +195,9 @@ class RegistrationController extends Controller
                     'amount_paid' => 0,
                     'payment_status' => $paymentStatus,
                     'payment_reference' => $request->payment_reference,
-                    'delivery_method' => $validated['email'] ? 'email' : 'whatsapp',
+                    'delivery_method' => $validated['email'] ?? null ? 'email' : 'whatsapp',
                     'delivered_at' => $isFree ? now() : null,
                     'created_by' => null,
-                    // ✅ NEW: WhatsApp delivery fields
                     'has_whatsapp' => $hasWhatsApp,
                     'preferred_delivery' => $preferredDelivery,
                     'delivery_status' => 'pending',
@@ -272,7 +270,7 @@ class RegistrationController extends Controller
     }
 
     /**
-     * ✅ NEW: Determine preferred delivery method
+     * Determine preferred delivery method
      */
     private function determinePreferredDelivery(Request $request, array $validated): string
     {

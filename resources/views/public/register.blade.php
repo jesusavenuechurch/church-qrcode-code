@@ -118,8 +118,10 @@
                     </div>
 
                     <div>
-                        <label class="block text-[10px] font-black text-gray-400 uppercase tracking-widest mb-2 ml-1">Email Address <span class="text-rose-500">*</span></label>
-                        <input type="email" name="email" value="{{ old('email') }}" required
+                        <label class="block text-[10px] font-black text-gray-400 uppercase tracking-widest mb-2 ml-1">Email Address 
+                        {{-- <span class="text-rose-500">*</span> --}}
+                        </label>
+                        <input type="email" name="email" value="{{ old('email') }}"
                                class="w-full bg-slate-50 border-2 border-slate-50 rounded-2xl px-6 py-4 focus:bg-white focus:border-blue-600 focus:ring-0 transition-all outline-none font-bold text-gray-900"
                                placeholder="john@example.com">
                         <p class="text-[10px] font-bold text-blue-500/60 uppercase mt-2 ml-1 tracking-wider">
@@ -128,7 +130,9 @@
                     </div>
 
                     <div>
-                        <label class="block text-[10px] font-black text-gray-400 uppercase tracking-widest mb-2 ml-1">Phone Number <span class="text-rose-500">*</span></label>
+                        <label class="block text-[10px] font-black text-gray-400 uppercase tracking-widest mb-2 ml-1">Phone Number 
+                        <span class="text-rose-500">*</span>
+                        </label>
                         <div class="flex">
                             <span class="inline-flex items-center px-5 bg-slate-100 border-2 border-r-0 border-slate-100 rounded-l-2xl font-black text-gray-400 text-sm">
                                 +266
@@ -493,7 +497,16 @@
         });
 
         // On form submit, clean and prepend +266 to phone
+        // On form submit, clean and prepend +266 to phone
         document.querySelector('form')?.addEventListener('submit', function(e) {
+            const emailInput = document.querySelector('input[name="email"]');
+            
+            // Remove email field if empty to prevent sending placeholder
+            if (emailInput && !emailInput.value.trim()) {
+                emailInput.removeAttribute('name');
+            }
+            
+            // Format phone number
             if (phoneInput) {
                 let cleanPhone = phoneInput.value.replace(/\D/g, '');
                 phoneInput.value = '+266' + cleanPhone;
