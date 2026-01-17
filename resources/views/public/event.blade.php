@@ -3,7 +3,37 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    
+    <!-- Page Title & Description -->
     <title>{{ $event->name }} - {{ $organization->name }}</title>
+    <meta name="description" content="{{ Str::limit($event->description ?? 'Join us for an amazing event!', 160) }}">
+    
+    <!-- ✨ Open Graph / WhatsApp / Facebook Preview -->
+    <meta property="og:type" content="website">
+    <meta property="og:url" content="{{ request()->url() }}">
+    <meta property="og:title" content="{{ $event->name }}">
+    <meta property="og:description" content="{{ Str::limit($event->description ?? 'Join us for ' . $event->name . ' at ' . $event->venue, 150) }}">
+    <meta property="og:image" content="{{ $event->banner_image ? url(Storage::url($event->banner_image)) : asset('images/default-event.jpg') }}">
+    <meta property="og:image:width" content="1200">
+    <meta property="og:image:height" content="630">
+    <meta property="og:image:alt" content="{{ $event->name }} - Event Flyer">
+    <meta property="og:site_name" content="{{ $organization->name }}">
+    <meta property="og:locale" content="en_LS">
+    
+    <!-- Twitter Card (also used by some platforms) -->
+    <meta name="twitter:card" content="summary_large_image">
+    <meta name="twitter:title" content="{{ $event->name }}">
+    <meta name="twitter:description" content="{{ Str::limit($event->description ?? 'Join us for an amazing event!', 150) }}">
+    <meta name="twitter:image" content="{{ $event->banner_image ? url(Storage::url($event->banner_image)) : asset('images/default-event.jpg') }}">
+    
+    <!-- Additional Event Info for Rich Previews -->
+    <meta property="event:start_time" content="{{ $event->event_date->toIso8601String() }}">
+    <meta property="event:location:latitude" content="{{ $event->latitude ?? '' }}">
+    <meta property="event:location:longitude" content="{{ $event->longitude ?? '' }}">
+    <meta property="event:location:venue_name" content="{{ $event->venue }}">
+    <meta property="event:location:city" content="{{ $event->location ?? 'Maseru' }}">
+    
+    <!-- Styles -->
     <script src="https://cdn.tailwindcss.com"></script>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
 </head>
@@ -181,26 +211,6 @@
         </div>
     </main>
 
-<script>
-    function openLightbox() {
-        document.getElementById('lightbox').classList.remove('hidden');
-        document.body.style.overflow = 'hidden'; // Prevent scrolling
-    }
-    
-    function closeLightbox() {
-        document.getElementById('lightbox').classList.add('hidden');
-        document.body.style.overflow = 'auto'; // Re-enable scrolling
-    }
-
-    // Close on 'Escape' key
-    document.addEventListener('keydown', (e) => {
-        if (e.key === "Escape") closeLightbox();
-    });
-
-    function selectTier(tierId) {
-        window.location.href = `/register/{{ $organization->slug }}/{{ $event->slug }}?tier=${tierId}`;
-    }
-</script>
     <!-- Footer -->
     <footer class="bg-gray-800 text-white mt-16">
         <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
@@ -216,8 +226,21 @@
     </footer>
 
     <script>
-        function selectTier(tierId, tierName, price) {
-            // Redirect to registration/checkout page with tier selected
+        function openLightbox() {
+            document.getElementById('lightbox').classList.remove('hidden');
+            document.body.style.overflow = 'hidden';
+        }
+        
+        function closeLightbox() {
+            document.getElementById('lightbox').classList.add('hidden');
+            document.body.style.overflow = 'auto';
+        }
+
+        document.addEventListener('keydown', (e) => {
+            if (e.key === "Escape") closeLightbox();
+        });
+
+        function selectTier(tierId) {
             window.location.href = `/register/{{ $organization->slug }}/{{ $event->slug }}?tier=${tierId}`;
         }
     </script>
