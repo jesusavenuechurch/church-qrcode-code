@@ -89,9 +89,9 @@
                                             @if($minPrice == 0)
                                                 Free
                                             @elseif($minPrice == $maxPrice)
-                                                {{ number_format($minPrice) }} UGX
+                                                {{ number_format($minPrice) }} LSL
                                             @else
-                                                {{ number_format($minPrice) }} - {{ number_format($maxPrice) }} UGX
+                                                {{ number_format($minPrice) }} - {{ number_format($maxPrice) }} LSL
                                             @endif
                                         </span>
                                     </div>
