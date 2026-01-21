@@ -11,6 +11,7 @@ use Filament\Tables\Table;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Model;
 use Spatie\Permission\Models\Role;
+use Illuminate\Support\Facades\Hash;
 
 class UserResource extends Resource
 {
@@ -39,6 +40,11 @@ class UserResource extends Resource
             return false;
         }
 
+        // Users can always edit their own profile
+        if ($user->id === $record->id) {
+            return true;
+        }
+
         if ($user->isSuperAdmin()) {
             return true;
         }
@@ -53,6 +59,11 @@ class UserResource extends Resource
         $user = auth()->user();
         
         if (!$user) {
+            return false;
+        }
+
+        // Cannot delete yourself
+        if ($user->id === $record->id) {
             return false;
         }
 
@@ -84,6 +95,8 @@ class UserResource extends Resource
 
     public static function form(Form $form): Form
     {
+        $isEditingOwnProfile = $form->getRecord() && $form->getRecord()->id === auth()->id();
+        
         return $form
             ->schema([
                 Forms\Components\Section::make('User Details')
@@ -103,15 +116,18 @@ class UserResource extends Resource
                         Forms\Components\TextInput::make('password')
                             ->label('Password')
                             ->password()
-                            ->dehydrateStateUsing(fn ($state) => filled($state) ? bcrypt($state) : null)
+                            ->dehydrateStateUsing(fn ($state) => filled($state) ? Hash::make($state) : null)
+                            ->dehydrated(fn ($state) => filled($state))
                             ->required(fn (string $operation) => $operation === 'create')
                             ->confirmed()
-                            ->visibleOn('create'),
+                            ->helperText(fn (string $operation) => 
+                                $operation === 'edit' ? 'Leave blank to keep current password' : null
+                            ),
 
                         Forms\Components\TextInput::make('password_confirmation')
                             ->label('Confirm Password')
                             ->password()
-                            ->visibleOn('create'),
+                            ->visible(fn (Forms\Get $get) => filled($get('password'))),
                     ])
                     ->columns(2),
 
@@ -121,23 +137,37 @@ class UserResource extends Resource
                             ->label('Organization')
                             ->relationship('organization', 'name')
                             ->required(fn () => !auth()->user()?->isSuperAdmin())
-                            ->disabled(fn () => !auth()->user()?->isSuperAdmin())
+                            ->disabled(fn () => !auth()->user()?->isSuperAdmin() || $isEditingOwnProfile)
                             ->default(auth()->user()?->organization_id)
-                            ->searchable(),
-                Forms\Components\CheckboxList::make('roles')
-                    ->label('Assign Roles')
-                    ->relationship('roles', 'name')
-                    ->options(Role::query()->pluck('name', 'id'))
-                    ->columns(3)
-                    ->helperText(
-                        'Super Admin: Full system access — see all organizations
-                        Org Admin: Manage their organization and staff
-                        Staff: Create clients, tickets, approve payments
-                        Scanner: Only scan QR codes at events
-                        Viewer: Read-only access to data'
-                    )
-                    ->required(),
-                ]),
+                            ->searchable()
+                            ->visible(!$isEditingOwnProfile),
+
+                        Forms\Components\CheckboxList::make('roles')
+                            ->label('Assign Roles')
+                            ->relationship('roles', 'name')
+                            ->options(function () {
+                                $roles = Role::query();
+                                
+                                // Non-super admins cannot assign super_admin role
+                                if (!auth()->user()?->isSuperAdmin()) {
+                                    $roles->where('name', '!=', 'super_admin');
+                                }
+                                
+                                return $roles->pluck('name', 'id');
+                            })
+                            ->columns(3)
+                            ->helperText(
+                                'Super Admin: Full system access — see all organizations
+                                Org Admin: Manage their organization and staff
+                                Staff: Create clients, tickets, approve payments
+                                Scanner: Only scan QR codes at events
+                                Viewer: Read-only access to data'
+                            )
+                            ->required()
+                            ->visible(!$isEditingOwnProfile)
+                            ->disabled($isEditingOwnProfile),
+                    ])
+                    ->visible(!$isEditingOwnProfile),
             ]);
     }
 
@@ -183,7 +213,8 @@ class UserResource extends Resource
             ->actions([
                 Tables\Actions\EditAction::make(),
                 Tables\Actions\DeleteAction::make()
-                    ->requiresConfirmation(),
+                    ->requiresConfirmation()
+                    ->visible(fn (Model $record) => $record->id !== auth()->id()),
             ])
             ->bulkActions([
                 Tables\Actions\BulkActionGroup::make([
@@ -193,16 +224,33 @@ class UserResource extends Resource
                         ->form([
                             Forms\Components\Select::make('role')
                                 ->label('Role')
-                                ->options(Role::all()->pluck('name', 'name'))
+                                ->options(function () {
+                                    $roles = Role::query();
+                                    
+                                    // Non-super admins cannot assign super_admin role
+                                    if (!auth()->user()?->isSuperAdmin()) {
+                                        $roles->where('name', '!=', 'super_admin');
+                                    }
+                                    
+                                    return $roles->pluck('name', 'name');
+                                })
                                 ->required(),
                         ])
                         ->action(function ($records, array $data) {
                             foreach ($records as $record) {
-                                $record->syncRoles([$data['role']]);
+                                // Don't allow changing your own role via bulk action
+                                if ($record->id !== auth()->id()) {
+                                    $record->syncRoles([$data['role']]);
+                                }
                             }
                         }),
 
-                    Tables\Actions\DeleteBulkAction::make(),
+                    Tables\Actions\DeleteBulkAction::make()
+                        ->action(function ($records) {
+                            // Filter out current user from deletion
+                            $records->filter(fn ($record) => $record->id !== auth()->id())
+                                    ->each(fn ($record) => $record->delete());
+                        }),
                 ]),
             ]);
     }
