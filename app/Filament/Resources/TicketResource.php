@@ -3,6 +3,8 @@
 namespace App\Filament\Resources;
 
 use App\Models\Ticket;
+use App\Models\Event;
+use App\Models\Client;
 use App\Models\OrganizationPaymentMethod;
 use Filament\Forms;
 use Filament\Forms\Form;
@@ -38,18 +40,44 @@ class TicketResource extends Resource
      ------------------------------------------------------------ */
     public static function form(Form $form): Form
     {
+        $user = auth()->user();
+        $isSuperAdmin = $user?->isSuperAdmin();
+
         return $form->schema([
             Forms\Components\Section::make('Ticket Details')
                 ->description('Manage guest access and event tier assignment.')
                 ->schema([
                     Forms\Components\Select::make('event_id')
-                        ->relationship('event', 'name')
+                        ->relationship(
+                            'event', 
+                            'name',
+                            modifyQueryUsing: fn (Builder $query) => $isSuperAdmin 
+                                ? $query 
+                                : $query->where('organization_id', $user->organization_id)
+                        )
                         ->required()
                         ->live()
-                        ->afterStateUpdated(fn (Forms\Set $set) => $set('event_tier_id', null)),
+                        ->default(function () use ($isSuperAdmin, $user) {
+                            if ($isSuperAdmin) return null;
+                            
+                            // Get first event for the user's organization
+                            return Event::where('organization_id', $user->organization_id)
+                                ->orderBy('created_at', 'desc')
+                                ->value('id');
+                        })
+                        ->afterStateUpdated(function (Forms\Set $set) {
+                            $set('event_tier_id', null);
+                            $set('amount', null);
+                        }),
 
                     Forms\Components\Select::make('client_id')
-                        ->relationship('client', 'full_name')
+                        ->relationship(
+                            'client', 
+                            'full_name',
+                            modifyQueryUsing: fn (Builder $query) => $isSuperAdmin 
+                                ? $query 
+                                : $query->where('organization_id', $user->organization_id)
+                        )
                         ->required()
                         ->searchable()
                         ->preload(),
@@ -59,18 +87,27 @@ class TicketResource extends Resource
                         ->relationship(
                             name: 'tier', 
                             titleAttribute: 'tier_name', 
-                            // Corrected $query variable to prevent BindingResolutionException
                             modifyQueryUsing: fn (Builder $query, Forms\Get $get) => $query
                                 ->when($get('event_id'), fn ($q) => $q->where('event_id', $get('event_id')))
                         )
                         ->required()
                         ->searchable()
-                        ->preload(),
+                        ->preload()
+                        ->live()
+                        ->afterStateUpdated(function ($state, Forms\Set $set) {
+                            if ($state) {
+                                $tier = \App\Models\EventTier::find($state);
+                                if ($tier) {
+                                    $set('amount', $tier->price);
+                                }
+                            }
+                        }),
                         
                     Forms\Components\TextInput::make('amount')
                         ->numeric()
                         ->prefix(config('constants.currency.symbol'))
-                        ->required(),
+                        ->required()
+                        ->readOnly(),
                 ])->columns(2),
         ]);
     }
@@ -99,14 +136,14 @@ class TicketResource extends Resource
                 Tables\Columns\TextColumn::make('amount')
                     ->money(config('constants.currency.code'))
                     ->weight(FontWeight::Black)
-                    ->color('primary') // Ventiq Navy
+                    ->color('primary')
                     ->alignment(Alignment::Right),
 
                 Tables\Columns\TextColumn::make('payment_status')
                     ->label('Payment')
                     ->badge()
                     ->color(fn (string $state): string => match ($state) {
-                        'pending' => 'warning', // Ventiq Orange
+                        'pending' => 'warning',
                         'completed' => 'success',
                         'failed' => 'danger',
                         default => 'gray',

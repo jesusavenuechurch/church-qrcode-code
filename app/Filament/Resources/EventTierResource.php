@@ -128,7 +128,7 @@ class EventTierResource extends Resource
                             ->required()
                             ->step(0.01)
                             ->minValue(0)
-                            ->suffix('UGX')
+                            ->suffix('LSL')
                             ->helperText('Ticket price for this tier'),
 
                         Forms\Components\TextInput::make('quantity_available')
@@ -212,7 +212,7 @@ class EventTierResource extends Resource
 
                 Tables\Columns\TextColumn::make('price')
                     ->label('Price')
-                    ->money('UGX')
+                    ->money('LSL')
                     ->sortable(),
 
                 Tables\Columns\TextColumn::make('quantity_available')
