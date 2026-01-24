@@ -9,6 +9,21 @@ use App\Http\Controllers\RegistrationController;
 use App\Http\Controllers\EventsBrowseController;
 use App\Http\Controllers\InstallmentController;
 use App\Http\Controllers\WhatsAppController;
+use Spatie\Sitemap\Sitemap;
+use Spatie\Sitemap\Tags\Url;
+
+Route::get('/sitemap.xml', function () {
+    return Sitemap::create()
+        ->add(Url::create('/')
+            ->setPriority(1.0)
+            ->setChangeFrequency(Url::CHANGE_FREQUENCY_DAILY))
+        ->add(Url::create('/pricing')
+            ->setPriority(0.8)
+            ->setChangeFrequency(Url::CHANGE_FREQUENCY_WEEKLY))
+        // Add your event pages dynamically
+        ->add(Url::create('/support')
+            ->setPriority(0.6));
+});
 
 Route::get('/', function () {
     return view('welcome');
