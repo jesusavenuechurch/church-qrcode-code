@@ -3,6 +3,11 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+
+    <meta name="description" content="Buy event tickets online in Lesotho. VENTIQ offers secure ticketing, event registration and live streaming for concerts, workshops and conferences in Maseru.">
+    <meta name="keywords" content="event tickets Lesotho, buy tickets Maseru, event registration, concert tickets, workshop registration, online ticketing Lesotho, VENTIQ">
+    <meta name="robots" content="index, follow">
+    <link rel="canonical" href="{{ url()->current() }}">
     
     <title>@yield('title', 'VENTIQ | Intelligent Ticketing & Event Streaming')</title>
     <meta name="description" content="The modern gateway for workshops, events, and seamless registrations in Lesotho. Simply Connected.">

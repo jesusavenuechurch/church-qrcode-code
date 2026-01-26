@@ -13,17 +13,44 @@ use Spatie\Sitemap\Sitemap;
 use Spatie\Sitemap\Tags\Url;
 
 Route::get('/sitemap.xml', function () {
-    return Sitemap::create()
+    $sitemap = Sitemap::create()
         ->add(Url::create('/')
+            ->setLastModificationDate(now())
             ->setPriority(1.0)
             ->setChangeFrequency(Url::CHANGE_FREQUENCY_DAILY))
         ->add(Url::create('/pricing')
+            ->setLastModificationDate(now())
             ->setPriority(0.8)
             ->setChangeFrequency(Url::CHANGE_FREQUENCY_WEEKLY))
-        // Add your event pages dynamically
-        ->add(Url::create('/support')
-            ->setPriority(0.6));
-});
+        ->add(Url::create('/events')
+            ->setLastModificationDate(now())
+            ->setPriority(0.9)
+            ->setChangeFrequency(Url::CHANGE_FREQUENCY_DAILY));
+    
+    // Add all public events dynamically (without is_published check)
+    try {
+        $organizations = \App\Models\Organization::with('events')->get();
+        
+        foreach ($organizations as $org) {
+            if ($org->events) {
+                foreach ($org->events as $event) {
+                    $sitemap->add(
+                        Url::create("/org/{$org->slug}/event/{$event->slug}")
+                            ->setLastModificationDate($event->updated_at ?? now())
+                            ->setPriority(0.9)
+                            ->setChangeFrequency(Url::CHANGE_FREQUENCY_DAILY)
+                    );
+                }
+            }
+        }
+    } catch (\Exception $e) {
+        // Log error but still return sitemap with base URLs
+        \Log::error('Sitemap generation error: ' . $e->getMessage());
+    }
+    
+    return $sitemap->toResponse(request());
+})->name('sitemap');
+
 
 Route::get('/', function () {
     return view('welcome');
