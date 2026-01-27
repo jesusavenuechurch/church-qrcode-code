@@ -11,6 +11,33 @@ use App\Http\Controllers\InstallmentController;
 use App\Http\Controllers\WhatsAppController;
 use Spatie\Sitemap\Sitemap;
 use Spatie\Sitemap\Tags\Url;
+use Illuminate\Support\Facades\Mail;
+use Illuminate\Http\Request;
+
+Route::post('/contact', function (Request $request) {
+    $data = $request->validate([
+        'name'    => 'required|string|max:255',
+        'phone'   => 'required|string|max:20', // Crucial for Lesotho/WhatsApp context
+        'email'   => 'nullable|email',         // Now optional
+        'subject' => 'required|string',
+        'message' => 'required|string',
+    ]);
+
+    $emailContent = "New VENTIQ Intelligence Inquiry\n"
+                  . "------------------------------\n"
+                  . "Name: {$data['name']}\n"
+                  . "Phone: {$data['phone']}\n"
+                  . "Email: " . ($data['email'] ?? 'Not provided') . "\n"
+                  . "Subject: {$data['subject']}\n\n"
+                  . "Message:\n{$data['message']}";
+
+    Mail::raw($emailContent, function ($message) use ($data) {
+        $message->to('support@ventiq.co.ls')
+                ->subject("Inquiry: {$data['subject']} - {$data['name']}");
+    });
+
+    return response()->json(['success' => true]);
+});
 
 Route::get('/sitemap.xml', function () {
     $sitemap = Sitemap::create()
