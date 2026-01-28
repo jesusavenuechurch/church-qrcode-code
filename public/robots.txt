@@ -1,6 +1,8 @@
 User-agent: *
 Allow: /
+Allow: /favicon.ico
 Disallow: /admin
 Disallow: /filament
+Disallow: /livewire
 
 Sitemap: https://ventiq.co.ls/sitemap.xml
