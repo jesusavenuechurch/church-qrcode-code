@@ -13,6 +13,7 @@ use Spatie\Sitemap\Sitemap;
 use Spatie\Sitemap\Tags\Url;
 use Illuminate\Support\Facades\Mail;
 use Illuminate\Http\Request;
+use App\Http\Controllers\AgentRegistrationController;
 
 Route::post('/contact', function (Request $request) {
     $data = $request->validate([
@@ -165,3 +166,9 @@ Route::get('/pricing', function () {
 Route::get('/access', function () {
     return view('public.org-admin');
 })->name('pricing');
+
+Route::get('/org/register/{token}', [AgentRegistrationController::class, 'showForm'])
+    ->name('agent.registration.form');
+
+Route::post('/org/register/{token}', [AgentRegistrationController::class, 'submit'])
+    ->name('agent.registration.submit');

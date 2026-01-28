@@ -20,6 +20,9 @@ use App\Http\Controllers\WhatsAppController;
 use App\Jobs\SendTicketApprovedEmail;
 use Filament\Support\Enums\FontWeight;
 use Filament\Support\Enums\Alignment;
+use Maatwebsite\Excel\Facades\Excel;
+use App\Imports\TicketsImport;
+use Filament\Forms\Components\FileUpload;
 
 class TicketResource extends Resource
 {
@@ -173,6 +176,7 @@ class TicketResource extends Resource
                     }),
             ])
             ->headerActions([
+                // ===== ISSUE COMPLIMENTARY TICKET =====
                 Tables\Actions\Action::make('issue_complimentary')
                     ->label('Issue Comp Ticket')->icon('heroicon-o-gift')->color('warning')->button()
                     ->form([
@@ -204,6 +208,152 @@ class TicketResource extends Resource
                             Notification::make()->title('Error')->body($e->getMessage())->danger()->send();
                         }
                     }),
+
+                // ===== BULK IMPORT TICKETS =====
+                Tables\Actions\Action::make('bulk_import')
+                    ->label('Bulk Import')
+                    ->icon('heroicon-o-arrow-up-tray')
+                    ->color('info')
+                    ->button()
+                    ->modalHeading('Bulk Import Tickets')
+                    ->modalDescription('Upload a CSV/Excel file to create multiple tickets at once')
+                    ->modalWidth('2xl')
+                    ->form([
+                        Forms\Components\Section::make('Event & Tier Selection')
+                            ->schema([
+                                Forms\Components\Select::make('event_id')
+                                    ->label('Event')
+                                    ->options(fn() => Event::where('status', 'published')
+                                        ->when(!auth()->user()->isSuperAdmin(), fn($q) => 
+                                            $q->where('organization_id', auth()->user()->organization_id)
+                                        )
+                                        ->pluck('name', 'id'))
+                                    ->required()
+                                    ->live()
+                                    ->afterStateUpdated(fn ($set) => $set('tier_id', null)),
+
+                                Forms\Components\Select::make('tier_id')
+                                    ->label('Ticket Tier')
+                                    ->options(fn (Forms\Get $get) => 
+                                        EventTier::where('event_id', $get('event_id'))
+                                            ->pluck('tier_name', 'id')
+                                    )
+                                    ->required()
+                                    ->disabled(fn (Forms\Get $get) => !$get('event_id'))
+                                    ->helperText('All imported tickets will be assigned to this tier'),
+                            ])->columns(2),
+
+                        Forms\Components\Section::make('Ticket Type')
+                            ->schema([
+                                Forms\Components\Toggle::make('is_complimentary')
+                                    ->label('Mark all as Complimentary Tickets')
+                                    ->default(true)
+                                    ->helperText('If enabled, all tickets will be free and auto-approved')
+                                    ->live(),
+
+                                Forms\Components\Textarea::make('reason')
+                                    ->label('Reason for Complimentary')
+                                    ->visible(fn (Forms\Get $get) => $get('is_complimentary'))
+                                    ->default('Bulk import - complimentary tickets')
+                                    ->rows(2),
+                            ])->columns(1),
+
+                        Forms\Components\Section::make('Upload File')
+                            ->schema([
+                                FileUpload::make('file')
+                                    ->label('CSV/Excel File')
+                                    ->acceptedFileTypes([
+                                        'text/csv',
+                                        'text/plain',
+                                        'application/vnd.ms-excel',
+                                        'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
+                                    ])
+                                    ->maxSize(5120) // 5MB
+                                    ->required()
+                                    ->helperText('Upload a CSV or Excel file with columns: full_name, phone, email (optional), has_whatsapp (optional)'),
+
+                                Forms\Components\Placeholder::make('template_download')
+                                    ->label('Need a template?')
+                                    ->content(new \Illuminate\Support\HtmlString('
+                                        <a href="/download-bulk-ticket-template" 
+                                           class="text-blue-600 hover:underline font-medium"
+                                           download>
+                                            📥 Download CSV Template
+                                        </a>
+                                    ')),
+                            ]),
+
+                        Forms\Components\Section::make('Important Notes')
+                            ->schema([
+                                Forms\Components\Placeholder::make('notes')
+                                    ->content(new \Illuminate\Support\HtmlString('
+                                        <ul class="text-sm space-y-1 text-gray-600">
+                                            <li>• <strong>Required columns:</strong> full_name, phone</li>
+                                            <li>• <strong>Optional columns:</strong> email, has_whatsapp</li>
+                                            <li>• Phone numbers will be auto-formatted to +266 format</li>
+                                            <li>• Duplicate phone numbers will be skipped</li>
+                                            <li>• Clients will be created if they don\'t exist</li>
+                                            <li>• QR codes will be generated automatically</li>
+                                            <li>• Complimentary tickets will be delivered immediately</li>
+                                        </ul>
+                                    ')),
+                            ])
+                            ->collapsible(),
+                    ])
+                    ->action(function (array $data) {
+                        $user = auth()->user();
+                        
+                        try {
+                            // Get uploaded file path
+                            $filePath = storage_path('app/public/' . $data['file']);
+
+                            // Create importer
+                            $import = new TicketsImport(
+                                eventId: $data['event_id'],
+                                tierId: $data['tier_id'],
+                                isComplimentary: $data['is_complimentary'] ?? false,
+                                reason: $data['reason'] ?? null,
+                                organizationId: $user->organization_id,
+                                createdBy: $user->id
+                            );
+
+                            // Process import
+                            Excel::import($import, $filePath);
+
+                            // Build result message
+                            $message = "✅ Successfully created {$import->successCount} ticket(s)";
+                            
+                            if ($import->errorCount > 0) {
+                                $message .= "\n⚠️ {$import->errorCount} row(s) had errors";
+                                
+                                // Show first 5 errors
+                                $errorDetails = collect($import->errors)
+                                    ->take(5)
+                                    ->map(fn($err) => "Row {$err['row']}: {$err['error']}")
+                                    ->join("\n");
+                                
+                                $message .= "\n\n" . $errorDetails;
+                                
+                                if ($import->errorCount > 5) {
+                                    $message .= "\n... and " . ($import->errorCount - 5) . " more errors";
+                                }
+                            }
+
+                            Notification::make()
+                                ->title('Bulk Import Complete')
+                                ->body($message)
+                                ->success()
+                                ->duration(10000)
+                                ->send();
+
+                        } catch (\Exception $e) {
+                            Notification::make()
+                                ->title('Import Failed')
+                                ->body($e->getMessage())
+                                ->danger()
+                                ->send();
+                        }
+                    }),
             ])
             ->actions([
                 Tables\Actions\Action::make('approve_payment')
@@ -215,7 +365,6 @@ class TicketResource extends Resource
                 Tables\Actions\ActionGroup::make([
                     Tables\Actions\Action::make('preview_pass')->label('View Pass')->icon('heroicon-o-arrow-top-right-on-square')->url(fn ($record) => route('ticket.download', $record->qr_code))->openUrlInNewTab(),
                     
-                    // ✅ RESTORED: Share Ticket Action
                     Tables\Actions\Action::make('copy_link')
                         ->label('Share Ticket')->icon('heroicon-o-share')
                         ->modalHeading('Share Access Pass')->modalWidth('md')

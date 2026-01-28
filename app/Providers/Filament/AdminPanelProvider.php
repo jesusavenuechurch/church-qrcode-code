@@ -31,7 +31,7 @@ class AdminPanelProvider extends PanelProvider
 
             // 🎨 BRANDING: Navy & Orange
             ->brandName('VENTIQ')
-            ->brandLogo(asset('images/ventiq-noback.png')) // Ensure this image exists in public/images
+            ->brandLogo(asset('images/1.png')) // Ensure this image exists in public/images
             ->brandLogoHeight('5.5rem')
             ->favicon(asset('favicon.ico'))
             

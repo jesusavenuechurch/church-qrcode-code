@@ -8,7 +8,14 @@ use Illuminate\Database\Eloquent\Relations\HasMany;
 class Organization extends Model
 {
     protected $fillable = ['name', 'email', 'phone', 'description', 'website', 'logo_path', 'is_active', 
-    'slug', 'tagline', 'contact_email',];
+    'slug', 'tagline', 'contact_email',  'agent_id',
+        'registered_via_agent_at',
+        'registration_source',];
+
+    protected $casts = [
+        'is_active' => 'boolean',
+        'registered_via_agent_at' => 'datetime',
+    ];
 
     protected static function boot()
     {
@@ -41,10 +48,10 @@ class Organization extends Model
         return $slug;
     }
 
-    public function partners(): HasMany
-    {
-        return $this->hasMany(Partner::class, 'organization_id');
-    }
+    // public function partners(): HasMany
+    // {
+    //     return $this->hasMany(Partner::class, 'organization_id');
+    // }
 
     public function clients(): HasMany
     {
@@ -59,5 +66,18 @@ class Organization extends Model
     public function paymentMethods()
     {
         return $this->hasMany(OrganizationPaymentMethod::class);
+    }
+
+    public function agent(): BelongsTo
+    {
+        return $this->belongsTo(Agent::class);
+    }
+
+        /**
+     * Check if org was referred by an agent
+     */
+    public function wasReferredByAgent(): bool
+    {
+        return !is_null($this->agent_id);
     }
 }
