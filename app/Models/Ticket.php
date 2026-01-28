@@ -26,7 +26,8 @@ class Ticket extends Model
         'printed_at', 'printed_by', 'avatar_path', 'avatar_generated_at',
         // ✅ NEW: WhatsApp delivery fields
         'preferred_delivery', 'has_whatsapp', 'delivery_status',
-        'whatsapp_delivered_at', 'email_delivered_at', 'delivery_log', 'amount_paid'
+        'whatsapp_delivered_at', 'email_delivered_at', 'delivery_log', 'amount_paid',
+        'is_complimentary', 'complimentary_issued_by', 'complimentary_reason',
     ];
 
     protected $casts = [
@@ -42,7 +43,40 @@ class Ticket extends Model
         'whatsapp_delivered_at' => 'datetime',
         'email_delivered_at' => 'datetime',
         'delivery_log' => 'array',
+        'is_complimentary' => 'boolean',
     ];
+
+    public function isComplimentary(): bool
+    {
+        return $this->is_complimentary === true;
+    }
+
+    /**
+     * Relationship to admin who issued complimentary ticket
+     */
+    public function complimentaryIssuedBy(): BelongsTo
+    {
+        return $this->belongsTo(User::class, 'complimentary_issued_by');
+    }
+
+    /**
+     * Mark ticket as complimentary (called when admin creates it)
+     */
+    public function markAsComplimentary(int $adminId, ?string $reason = null): void
+    {
+        $this->update([
+            'is_complimentary' => true,
+            'complimentary_issued_by' => $adminId,
+            'complimentary_reason' => $reason,
+            'amount' => 0, // Complimentary = M0
+            'amount_paid' => 0,
+            'payment_status' => 'completed', // Auto-approved
+            'status' => 'active', // Ready to use
+            'payment_date' => now(),
+        ]);
+
+        Log::info("Ticket {$this->ticket_number} marked as complimentary by admin {$adminId}");
+    }
 
     // ===== RELATIONSHIPS =====
 
@@ -158,6 +192,9 @@ class Ticket extends Model
 
     public function updatePaymentStatus(): void
     {
+        if ($this->is_complimentary) {
+            return;
+        }
         // Calculate total paid from approved payments
         $totalPaid = $this->payments()->approved()->sum('amount');
         
@@ -317,12 +354,10 @@ class Ticket extends Model
     protected static function booted(): void
     {
         static::creating(function ($ticket) {
-            // Generate QR code UUID
             if (!$ticket->qr_code) {
                 $ticket->qr_code = 'QR-' . Str::uuid();
             }
 
-            // Generate ticket number if not provided
             if (!$ticket->ticket_number) {
                 $ticket->ticket_number = 'TKT-' . $ticket->event_id . '-' . Str::random(8);
             }
@@ -330,7 +365,6 @@ class Ticket extends Model
             Log::info("New ticket created: {$ticket->ticket_number}");
         });
 
-        // Regenerate QR code if tier changes
         static::updated(function ($ticket) {
             if ($ticket->isDirty('event_tier_id')) {
                 Log::info("Tier changed for Ticket ID: {$ticket->id}, regenerating QR code");
@@ -339,23 +373,28 @@ class Ticket extends Model
         });
 
         static::created(function ($ticket) {
-            if ($ticket->payment_status === 'pending') {
+            // ✅ Don't notify admins for complimentary tickets (they just created it!)
+            if (!$ticket->is_complimentary && $ticket->payment_status === 'pending') {
                 Log::info("🔔 Payment is PENDING - calling notifyAdminsOfNewRegistration()");
                 $ticket->notifyAdminsOfNewRegistration();
             } else {
-                Log::info("⏭️ Payment is NOT pending ({$ticket->payment_status}) - skipping notification");
+                Log::info("⏭️ Skipping notification (complimentary or not pending)");
             }
         });
 
         static::updated(function ($ticket) {
-            // ✅ FIXED: Prevent infinite loop by checking if payment_status actually changed
+            // ✅ Auto-deliver complimentary tickets immediately
+            if ($ticket->isDirty('is_complimentary') && $ticket->is_complimentary) {
+                dispatch(function () use ($ticket) {
+                    $ticket->autoDeliverTicket();
+                })->afterResponse();
+            }
+
+            // Normal payment approval flow
             if ($ticket->isDirty('payment_status') && $ticket->payment_status === 'completed') {
-                // Run these OUTSIDE the model update cycle to prevent loops
                 dispatch(function () use ($ticket) {
                     $ticket->notifyClientOfApproval();
                     $ticket->checkLowInventory();
-                    
-                    // ✅ Auto-deliver ticket (non-blocking, failures won't stop approval)
                     $ticket->autoDeliverTicket();
                 })->afterResponse();
             }

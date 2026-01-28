@@ -4,6 +4,7 @@ namespace App\Filament\Resources;
 
 use App\Models\Ticket;
 use App\Models\Event;
+use App\Models\Client;
 use App\Models\OrganizationPaymentMethod;
 use Filament\Forms;
 use Filament\Forms\Form;
@@ -34,207 +35,220 @@ class TicketResource extends Resource
         return $query->whereHas('event', fn($q) => $q->where('organization_id', $user->organization_id));
     }
 
-    /* ------------------------------------------------------------
-     | Form: Create / Edit
-     ------------------------------------------------------------ */
     public static function form(Form $form): Form
     {
+        $user = auth()->user();
+        $isSuperAdmin = $user?->isSuperAdmin();
+
         return $form->schema([
-            // Section 1: Read-Only Ticket Context (Displays names instead of IDs)
-            Forms\Components\Section::make('Ticket Context')
-                ->description('Core assignment for this guest pass.')
+            Forms\Components\Section::make('Ticket Details')
+                ->description('Manage guest access and event tier assignment.')
                 ->schema([
-                    Forms\Components\Grid::make(3)->schema([
-                        Forms\Components\Placeholder::make('event_name')
-                            ->label('Event')
-                            ->content(fn ($record) => $record?->event?->name ?? 'N/A'),
+                    // EVENT: Select on Create, Placeholder on Edit
+                    Forms\Components\Select::make('event_id')
+                        ->relationship('event', 'name', modifyQueryUsing: fn (Builder $query) => 
+                            $isSuperAdmin ? $query : $query->where('organization_id', $user->organization_id)
+                        )
+                        ->required()
+                        ->live()
+                        ->hidden(fn ($record) => $record !== null)
+                        ->default(fn () => $isSuperAdmin ? null : Event::where('organization_id', $user->organization_id)->orderBy('created_at', 'desc')->value('id'))
+                        ->afterStateUpdated(fn (Forms\Set $set) => $set('event_tier_id', null)),
 
-                        Forms\Components\Placeholder::make('tier_name')
-                            ->label('Access Tier')
-                            ->content(fn ($record) => $record?->tier?->tier_name ?? 'N/A'),
+                    Forms\Components\Placeholder::make('event_name_label')
+                        ->label('Event')
+                        ->content(fn ($record) => $record?->event?->name)
+                        ->visible(fn ($record) => $record !== null),
 
-                        Forms\Components\Placeholder::make('total_amount')
-                            ->label('Total Cost')
-                            ->content(fn ($record) => config('constants.currency.symbol') . ' ' . number_format($record?->amount, 2)),
-                    ]),
-                ]),
+                    // CLIENT: Select on Create, Placeholder on Edit
+                    Forms\Components\Select::make('client_id')
+                        ->relationship('client', 'full_name', modifyQueryUsing: fn (Builder $query) => 
+                            $isSuperAdmin ? $query : $query->where('organization_id', $user->organization_id)
+                        )
+                        ->required()
+                        ->searchable()
+                        ->preload()
+                        ->hidden(fn ($record) => $record !== null),
 
-            // Section 2: Status Management (Interactive Toggles)
+                    Forms\Components\Placeholder::make('client_name_label')
+                        ->label('Guest')
+                        ->content(fn ($record) => $record?->client?->full_name)
+                        ->visible(fn ($record) => $record !== null),
+
+                    // TIER: Select on Create, Placeholder on Edit
+                    Forms\Components\Select::make('event_tier_id')
+                        ->label('Access Tier')
+                        ->relationship('tier', 'tier_name', modifyQueryUsing: fn (Builder $query, Forms\Get $get) => 
+                            $query->when($get('event_id'), fn ($q) => $q->where('event_id', $get('event_id')))
+                        )
+                        ->required()
+                        ->live()
+                        ->hidden(fn ($record) => $record !== null)
+                        ->afterStateUpdated(function ($state, Forms\Set $set) {
+                            if ($state) {
+                                $tier = \App\Models\EventTier::find($state);
+                                if ($tier) $set('amount', $tier->price);
+                            }
+                        }),
+
+                    Forms\Components\Placeholder::make('tier_name_label')
+                        ->label('Access Tier')
+                        ->content(fn ($record) => $record?->tier?->tier_name)
+                        ->visible(fn ($record) => $record !== null),
+
+                    // AMOUNT: Input on Create, Placeholder on Edit
+                    Forms\Components\TextInput::make('amount')
+                        ->numeric()
+                        ->prefix(config('constants.currency.symbol'))
+                        ->required()
+                        ->readOnly()
+                        ->hidden(fn ($record) => $record !== null),
+
+                    Forms\Components\Placeholder::make('amount_label')
+                        ->label('Total Cost')
+                        ->content(fn ($record) => config('constants.currency.symbol') . ' ' . number_format($record?->amount ?? 0, 2))
+                        ->visible(fn ($record) => $record !== null),
+                ])->columns(2),
+
+            // NEW: Status Management Section (Only visible on Edit)
             Forms\Components\Section::make('Payment & Access Management')
-                ->description('Manually update the current standing of this ticket.')
+                ->visible(fn ($record) => $record !== null)
                 ->schema([
                     Forms\Components\Grid::make(2)->schema([
                         Forms\Components\ToggleButtons::make('payment_status')
-                            ->label('Payment Status')
                             ->options(config('constants.payment_statuses'))
-                            ->required()
                             ->inline()
-                            ->live()
-                            ->colors([
-                                'pending' => 'warning',
-                                'partial' => 'info',
-                                'completed' => 'success',
-                                'failed' => 'danger',
-                                'refunded' => 'gray',
-                            ])
-                            ->icons([
-                                'pending' => 'heroicon-o-clock',
-                                'partial' => 'heroicon-o-adjustments-horizontal',
-                                'completed' => 'heroicon-o-check-circle',
-                                'failed' => 'heroicon-o-x-circle',
-                                'refunded' => 'heroicon-o-arrow-uturn-left',
-                            ]),
-
+                            ->colors(['pending' => 'warning', 'partial' => 'info', 'completed' => 'success', 'failed' => 'danger']),
                         Forms\Components\ToggleButtons::make('status')
-                            ->label('Access Status')
-                            ->options([
-                                'active' => 'Active',
-                                'checked_in' => 'Checked In',
-                                'refunded' => 'Refunded',
-                                'void' => 'Void',
-                            ])
-                            ->required()
+                            ->options(['active' => 'Active', 'checked_in' => 'Checked In', 'refunded' => 'Refunded', 'void' => 'Void'])
                             ->inline()
-                            ->colors([
-                                'active' => 'info',
-                                'checked_in' => 'success',
-                                'refunded' => 'danger',
-                                'void' => 'gray',
-                            ])
-                            ->icons([
-                                'active' => 'heroicon-o-ticket',
-                                'checked_in' => 'heroicon-o-check-badge',
-                            ]),
+                            ->colors(['active' => 'info', 'checked_in' => 'success', 'refunded' => 'danger']),
                     ]),
                 ]),
-
-            // Section 3: Guest Info (Hidden/Collapsed by default)
-            Forms\Components\Section::make('Guest Information')
-                ->schema([
-                    Forms\Components\Select::make('client_id')
-                        ->relationship('client', 'full_name')
-                        ->disabled()
-                        ->label('Guest Assigned'),
-                ])->collapsed(),
         ]);
     }
 
-    /* ------------------------------------------------------------
-     | Table: The Command Center
-     ------------------------------------------------------------ */
     public static function table(Table $table): Table
-{
-    return $table
-        ->defaultSort('created_at', 'desc')
-        ->columns([
-            // GUEST & INFO: This is the only column that will show on mobile
-            Tables\Columns\TextColumn::make('client.full_name')
-                ->label('Guest')
-                ->weight(FontWeight::Bold)
-                ->searchable()
-                ->description(fn ($record) => 
-                    // Stacking ID and Tier using a line break or simple bullet
-                    $record->ticket_number . " \n " . $record->tier->tier_name
-                )
-                // This ensures the description can wrap if needed
-                ->wrap(),
+    {
+        return $table
+            ->defaultSort('created_at', 'desc')
+            ->columns([
+                Tables\Columns\TextColumn::make('ticket_number')
+                    ->label('Access ID')
+                    ->fontFamily('mono')
+                    ->weight(FontWeight::Bold)
+                    ->copyable()
+                    ->description(fn($record) => $record->tier->tier_name)
+                    ->searchable(),
 
-            // ACCESS ID: Shows only on desktop
-            Tables\Columns\TextColumn::make('ticket_number')
-                ->label('Access ID')
-                ->fontFamily('mono')
-                ->visibleFrom('md'), 
+                Tables\Columns\TextColumn::make('client.full_name')
+                    ->label('Guest')
+                    ->description(fn($record) => $record->client->phone)
+                    ->searchable(),
 
-            // STATUS: Shows only on desktop
-            Tables\Columns\TextColumn::make('payment_status')
-                ->label('Status')
-                ->badge()
-                ->color(fn (string $state): string => match ($state) {
-                    'pending' => 'warning',
-                    'partial' => 'info',
-                    'completed' => 'success',
-                    default => 'gray',
-                })
-                ->visibleFrom('md'), 
-        ])
-        ->actions([
-            // APPROVE: Stays on the right, icon-only on mobile
-            Tables\Actions\Action::make('approve_payment')
-                ->label('Approve')
-                ->icon('heroicon-m-check-badge')
-                ->color('success')
-                ->button()
-                ->labeledFrom('md') 
-                ->visible(fn ($record) =>
-                    ($record->payment_status === 'pending' || $record->payment_status === 'partial')
-                    && auth()->user()?->can('approve_payment')
-                    && $record->hasPendingPayments()
-                )
-                ->form(fn($record) => static::getApproveForm($record))
-                ->action(fn(Ticket $record, array $data) => static::handleApproval($record, $data)),
+                Tables\Columns\TextColumn::make('amount')
+                    ->money(config('constants.currency.code'))
+                    ->weight(FontWeight::Black)
+                    ->color('primary')
+                    ->alignment(Alignment::Right),
 
-            Tables\Actions\ActionGroup::make([
-                Tables\Actions\EditAction::make()->slideOver(),
-                Tables\Actions\DeleteAction::make(),
+                Tables\Columns\TextColumn::make('payment_status')
+                    ->label('Payment')
+                    ->badge()
+                    ->color(fn (string $state): string => match ($state) {
+                        'pending' => 'warning',
+                        'completed' => 'success',
+                        'failed' => 'danger',
+                        default => 'gray',
+                    }),
+
+                Tables\Columns\TextColumn::make('status')
+                    ->label('Access')
+                    ->badge()
+                    ->icons(['heroicon-m-ticket' => 'active', 'heroicon-m-check-badge' => 'checked_in'])
+                    ->color(fn (string $state): string => match ($state) {
+                        'active' => 'info',
+                        'checked_in' => 'success',
+                        'refunded' => 'danger',
+                        default => 'gray',
+                    }),
             ])
-            ->icon('heroicon-m-ellipsis-vertical')
-            ->color('gray')
-            ->button(),
-        ], position: Tables\Enums\ActionsPosition::AfterColumns);
-}
+            ->actions([
+                Tables\Actions\Action::make('approve_payment')
+                    ->label('Approve')
+                    ->icon('heroicon-m-check-badge')
+                    ->color('success')
+                    ->button()
+                    ->visible(fn ($record) =>
+                        ($record->payment_status === 'pending' || $record->payment_status === 'partial')
+                        && auth()->user()?->can('approve_payment')
+                        && $record->hasPendingPayments()
+                    )
+                    ->form(fn($record) => static::getOriginalApproveForm($record))
+                    ->action(fn(Ticket $record, array $data) => static::handleOriginalApproval($record, $data)),
 
-    /* ------------------------------------------------------------
-     | Logic Handlers
-     ------------------------------------------------------------ */
+                Tables\Actions\ActionGroup::make([
+                    Tables\Actions\Action::make('preview_pass')
+                        ->label('View Public Pass')
+                        ->icon('heroicon-o-arrow-top-right-on-square')
+                        ->url(fn ($record) => route('ticket.download', $record->qr_code))
+                        ->openUrlInNewTab(),
 
-    protected static function getApproveForm($record): array
+                    Tables\Actions\Action::make('copy_link')
+                        ->label('Share Ticket')
+                        ->icon('heroicon-o-share')
+                        ->modalHeading('Share Access Pass')
+                        ->modalWidth('md')
+                        ->modalContent(fn ($record) => view('filament.modals.ticket-link', ['ticket' => $record, 'link' => route('ticket.download', $record->qr_code)]))
+                        ->modalSubmitAction(false),
+
+                    Tables\Actions\Action::make('resend_whatsapp')
+                        ->label('Resend WhatsApp')
+                        ->icon('heroicon-o-chat-bubble-left-right')
+                        ->color('success')
+                        ->visible(fn ($record) => $record->payment_status === 'completed' && $record->has_whatsapp)
+                        ->action(fn ($record) => WhatsAppController::deliverTicket($record)),
+
+                    Tables\Actions\EditAction::make()->slideOver(),
+                    Tables\Actions\DeleteAction::make(),
+                ])
+                ->icon('heroicon-m-ellipsis-vertical')
+                ->color('gray')
+                ->button()
+                ->label('Options'),
+            ]);
+    }
+
+    protected static function getOriginalApproveForm($record): array
     {
         $pendingPayment = $record->payments()->pending()->latest()->first();
         if (!$pendingPayment) return [];
 
-        $orgPaymentMethods = OrganizationPaymentMethod::where('organization_id', $record->event->organization_id)
-            ->where('is_active', true)
-            ->get();
-        
-        $paymentOptions = $orgPaymentMethods->mapWithKeys(function ($method) {
-            $config = config('constants.payment_methods.' . $method->payment_method, []);
-            return [$method->payment_method => is_array($config) ? $config['label'] : $config];
-        })->toArray();
-        
+        $orgPaymentMethods = OrganizationPaymentMethod::where('organization_id', $record->event->organization_id)->where('is_active', true)->get();
+        $paymentOptions = $orgPaymentMethods->mapWithKeys(fn($m) => [$m->payment_method => config('constants.payment_methods.' . $m->payment_method . '.label', $m->payment_method)])->toArray();
         $currencySymbol = config('constants.currency.symbol', 'M');
 
         return [
-            Forms\Components\Section::make('Payment Validation')
+            Forms\Components\Section::make('Confirmation Details')
                 ->schema([
                     Forms\Components\Grid::make(2)->schema([
-                        Forms\Components\Placeholder::make('this_payment')
-                            ->label('Amount to Approve')
-                            ->content($currencySymbol . ' ' . number_format($pendingPayment->amount, 2)),
-                        
+                        Forms\Components\Placeholder::make('this_payment')->label('To Approve')->content($currencySymbol . ' ' . number_format($pendingPayment->amount, 2)),
+                        // FIXED: Added the status toggle here
                         Forms\Components\ToggleButtons::make('target_ticket_status')
-                            ->label('Set Overall Status To')
+                            ->label('Set Ticket Status To')
                             ->options(config('constants.payment_statuses'))
                             ->default(fn() => ($record->remaining_amount - $pendingPayment->amount <= 0) ? 'completed' : 'partial')
-                            ->inline()
-                            ->required()
-                            ->colors(['pending' => 'warning', 'partial' => 'info', 'completed' => 'success']),
+                            ->inline()->required()->colors(['pending' => 'warning', 'partial' => 'info', 'completed' => 'success']),
                     ]),
                 ]),
-            
             Forms\Components\Grid::make(2)->schema([
-                Forms\Components\Select::make('payment_method')
-                    ->options($paymentOptions)
-                    ->default($pendingPayment->payment_method)
-                    ->required(),
-                
-                Forms\Components\TextInput::make('payment_reference')
-                    ->default($pendingPayment->payment_reference)
-                    ->required(),
+                Forms\Components\Select::make('payment_method')->options($paymentOptions)->default($pendingPayment->payment_method)->required(),
+                Forms\Components\TextInput::make('payment_reference')->default($pendingPayment->payment_reference)->required(),
             ]),
         ];
     }
 
-    protected static function handleApproval(Ticket $record, array $data): void
+    protected static function handleOriginalApproval(Ticket $record, array $data): void
     {
         $pendingPayment = $record->payments()->pending()->latest()->first();
         if (!$pendingPayment) return;
@@ -249,22 +263,18 @@ class TicketResource extends Resource
                 'approved_at' => now(),
             ]);
 
-            // Update ticket based on selection in popup
+            // FIXED: Use the status selected in the popup
             $record->update(['payment_status' => $data['target_ticket_status']]);
 
-            if ($record->payments()->approved()->count() === 1) {
-                $record->tier->increment('quantity_sold');
-            }
+            if ($record->payments()->approved()->count() === 1) $record->tier->increment('quantity_sold');
 
             if ($record->payment_status === 'completed') {
                 $record->update(['status' => 'active']);
                 if ($record->client->email) dispatch(new SendTicketApprovedEmail($record->id))->afterResponse();
-                if ($record->has_whatsapp && $record->client->phone) {
-                    dispatch(fn() => WhatsAppController::deliverTicket($record))->afterResponse();
-                }
+                if ($record->has_whatsapp && $record->client->phone) dispatch(fn() => WhatsAppController::deliverTicket($record))->afterResponse();
             }
 
-            Notification::make()->title('Payment Approved & Status Updated')->success()->send();
+            Notification::make()->title('Payment Approved')->success()->send();
             DB::commit();
         } catch (\Exception $e) {
             DB::rollBack();
@@ -274,10 +284,6 @@ class TicketResource extends Resource
 
     public static function getPages(): array
     {
-        return [
-            'index' => Pages\ListTickets::route('/'),
-            'create' => Pages\CreateTicket::route('/create'),
-            'edit' => Pages\EditTicket::route('/{record}/edit'),
-        ];
+        return ['index' => Pages\ListTickets::route('/'), 'create' => Pages\CreateTicket::route('/create'), 'edit' => Pages\EditTicket::route('/{record}/edit')];
     }
 }
