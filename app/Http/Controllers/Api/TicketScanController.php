@@ -22,8 +22,8 @@ class TicketScanController extends Controller
 
             // Get events for the next 7 days (or all upcoming events)
             $query = Event::where('status', 'published')
-                ->where('date', '>=', now()->startOfDay())
-                ->where('date', '<=', now()->addDays(7)->endOfDay());
+               ->where('date', '>=', now()->subDays(7)->startOfDay()) 
+                ->where('date', '<=', now()->addDays(30)->endOfDay());
 
             // Filter by organization (unless super admin)
             if (!$user->hasRole('super_admin')) {
