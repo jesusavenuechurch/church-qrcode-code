@@ -15,55 +15,56 @@ class TicketScanController extends Controller
     /**
      * Get upcoming events for the authenticated user's organization
      */
-    public function getEvents(Request $request)
-    {
-        try {
-            $user = $request->user();
+    /**
+ * Get upcoming events for the authenticated user's organization
+ */
+public function getEvents(Request $request)
+{
+    try {
+        $user = $request->user();
 
-            // Get events for the next 7 days (or all upcoming events)
-            $query = Event::where('status', 'published')
-               ->where('date', '>=', now()->subDays(7)->startOfDay()) 
-                ->where('date', '<=', now()->addDays(30)->endOfDay());
+        // ✅ BYPASS: Get ALL published events (no date filter)
+        $query = Event::where('status', 'published');
 
-            // Filter by organization (unless super admin)
-            if (!$user->hasRole('super_admin')) {
-                $query->where('organization_id', $user->organization_id);
-            }
-
-            $events = $query->with(['tiers'])
-                ->orderBy('date', 'asc')
-                ->get()
-                ->map(function ($event) {
-                    $totalTickets = $event->tickets()->count();
-                    $checkedIn = $event->tickets()->whereNotNull('checked_in_at')->count();
-
-                    return [
-                        'id' => $event->id,
-                        'name' => $event->name,
-                        'date' => $event->date,
-                        'date_formatted' => Carbon::parse($event->date)->format('F j, Y g:i A'),
-                        'venue' => $event->venue ?? null,
-                        'capacity' => $event->capacity ?? null,
-                        'total_tickets' => $totalTickets,
-                        'checked_in' => $checkedIn,
-                    ];
-                });
-
-            return response()->json([
-                'success' => true,
-                'events' => $events,
-                'count' => $events->count(),
-            ], 200);
-
-        } catch (\Exception $e) {
-            \Log::error('Get events error: ' . $e->getMessage());
-            
-            return response()->json([
-                'success' => false,
-                'error' => 'Failed to fetch events',
-            ], 500);
+        // Filter by organization (unless super admin)
+        if (!$user->hasRole('super_admin')) {
+            $query->where('organization_id', $user->organization_id);
         }
+
+        $events = $query->with(['tiers'])
+            ->orderBy('event_date', 'desc')  // ← Changed from 'date' to 'event_date'
+            ->get()
+            ->map(function ($event) {
+                $totalTickets = $event->tickets()->count();
+                $checkedIn = $event->tickets()->whereNotNull('checked_in_at')->count();
+
+                return [
+                    'id' => $event->id,
+                    'name' => $event->name,
+                    'date' => $event->event_date,  // ← Changed from 'date' to 'event_date'
+                    'date_formatted' => Carbon::parse($event->event_date)->format('F j, Y g:i A'),
+                    'venue' => $event->venue ?? null,
+                    'capacity' => $event->capacity ?? null,
+                    'total_tickets' => $totalTickets,
+                    'checked_in' => $checkedIn,
+                ];
+            });
+
+        return response()->json([
+            'success' => true,
+            'events' => $events,
+            'count' => $events->count(),
+        ], 200);
+
+    } catch (\Exception $e) {
+        \Log::error('Get events error: ' . $e->getMessage());
+        
+        return response()->json([
+            'success' => false,
+            'error' => 'Failed to fetch events',
+        ], 500);
     }
+}
 
     /**
      * Download all tickets for a specific event
