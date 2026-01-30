@@ -17,9 +17,10 @@
     <link rel="manifest" href="{{ asset('site.webmanifest') }}">
     
     <meta property="og:type" content="website">
-    <meta property="og:title" content="VENTIQ - Simply Connected">
-    <meta property="og:description" content="Professional event ticketing and high-quality streaming for Lesotho.">
-    <meta property="og:image" content="{{ asset('images/ventiq-og-share.png') }}">
+    <meta property="og:title" content="VENTIQ — Event Intelligence">
+    <meta property="og:description" content="Intelligent ticketing, secure access, and real-time event management. Simply Connected.">
+    {{-- <meta property="og:image" content="{{ asset('images/ventiq-og-share.png') }}"> --}}
+    <meta property="og:image" content="{{ asset('images/meta.jpeg') }}">
     
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700;900&display=swap" rel="stylesheet">
