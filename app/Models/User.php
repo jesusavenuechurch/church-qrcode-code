@@ -10,7 +10,7 @@ use Filament\Models\Contracts\FilamentUser;
 use Filament\Panel;
 use Spatie\Permission\Traits\HasRoles;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
-8use Laravel\Sanctum\HasApiTokens;
+use Laravel\Sanctum\HasApiTokens;  // ← REMOVED THE "8" HERE
 
 class User extends Authenticatable implements FilamentUser
 {
@@ -76,6 +76,7 @@ class User extends Authenticatable implements FilamentUser
     {
         return $this->organization ?? Organization::first();
     }
+    
     public function getUnreadNotificationsCountAttribute(): int
     {
         return $this->unreadNotifications()->count();
