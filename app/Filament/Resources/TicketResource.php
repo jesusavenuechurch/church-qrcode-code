@@ -187,7 +187,7 @@ class TicketResource extends Resource
                         Forms\Components\Section::make('Guest Info')->schema([
                                 Forms\Components\TextInput::make('full_name')->required(),
                                 Forms\Components\TextInput::make('email')->email(),
-                                Forms\Components\TextInput::make('phone')->tel()->required()->prefix('+266'),
+                                Forms\Components\TextInput::make('phone')->tel()->prefix('+266'),
                                 Forms\Components\Toggle::make('has_whatsapp')->label('Send via WhatsApp')->default(true),
                         ])->columns(2),
                         Forms\Components\Textarea::make('reason')->label('Reason for Comp')->rows(2),
