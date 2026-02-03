@@ -193,21 +193,59 @@ class TicketResource extends Resource
                         Forms\Components\Textarea::make('reason')->label('Reason for Comp')->rows(2),
                     ])
                     ->action(function (array $data) {
-                        $user = auth()->user();
-                        DB::beginTransaction();
-                        try {
-                            $client = Client::firstOrCreate(['phone' => $data['phone']], ['full_name' => $data['full_name'], 'email' => $data['email'] ?? null, 'organization_id' => $user->organization_id]);
-                            $ticket = Ticket::create(['event_id' => $data['event_id'], 'client_id' => $client->id, 'event_tier_id' => $data['tier_id'], 'created_by' => $user->id, 'has_whatsapp' => $data['has_whatsapp'] ?? false, 'preferred_delivery' => $data['has_whatsapp'] ? 'both' : 'email']);
-                            $ticket->markAsComplimentary($user->id, $data['reason'] ?? 'Admin Issued');
-                            $ticket->generateQrCode();
-                            dispatch(fn() => $ticket->autoDeliverTicket())->afterResponse();
-                            DB::commit();
-                            Notification::make()->title('Comp Ticket Issued')->success()->send();
-                        } catch (\Exception $e) {
-                            DB::rollBack();
-                            Notification::make()->title('Error')->body($e->getMessage())->danger()->send();
-                        }
-                    }),
+    $user = auth()->user();
+    DB::beginTransaction();
+    try {
+        $client = null;
+
+        // 1. Try to find by Phone within the organization
+        if (!empty($data['phone'])) {
+            $client = Client::where('phone', $data['phone'])
+                ->where('organization_id', $user->organization_id)
+                ->first();
+        }
+
+        // 2. If not found, try to find by Email within the organization
+        if (!$client && !empty($data['email'])) {
+            $client = Client::where('email', $data['email'])
+                ->where('organization_id', $user->organization_id)
+                ->first();
+        }
+
+        // 3. If still no client, create a brand new one
+        if (!$client) {
+            $client = Client::create([
+                'full_name' => $data['full_name'],
+                'phone' => $data['phone'] ?? null,
+                'email' => $data['email'] ?? null,
+                'organization_id' => $user->organization_id,
+            ]);
+        } else {
+            // Optional: Update the existing client's name if it changed
+            $client->update(['full_name' => $data['full_name']]);
+        }
+
+        $ticket = Ticket::create([
+            'event_id' => $data['event_id'],
+            'client_id' => $client->id,
+            'event_tier_id' => $data['tier_id'],
+            'created_by' => $user->id,
+            'has_whatsapp' => $data['has_whatsapp'] ?? false,
+            'preferred_delivery' => $data['has_whatsapp'] ? 'both' : 'email'
+        ]);
+
+        $ticket->markAsComplimentary($user->id, $data['reason'] ?? 'Admin Issued');
+        $ticket->generateQrCode();
+
+        dispatch(fn() => $ticket->autoDeliverTicket())->afterResponse();
+
+        DB::commit();
+        Notification::make()->title('Comp Ticket Issued')->success()->send();
+    } catch (\Exception $e) {
+        DB::rollBack();
+        Notification::make()->title('Error')->body($e->getMessage())->danger()->send();
+    }
+}),
 
                 // ===== BULK IMPORT TICKETS =====
                 Tables\Actions\Action::make('bulk_import')
