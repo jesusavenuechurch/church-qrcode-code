@@ -36,10 +36,10 @@
                     </ul>
                 </div>
                 <div class="flex-shrink-0">
-                    <button @click="showChat = true; subject = 'Host an Event (Free Trial)'" 
-                            class="inline-block bg-[#1D4069] hover:bg-[#F07F22] text-white text-lg font-bold py-4 px-8 rounded-xl shadow-lg transition-all hover:-translate-y-1">
+                    <a href="/org/register" 
+                    class="inline-block bg-[#1D4069] hover:bg-[#F07F22] text-white text-lg font-bold py-4 px-8 rounded-xl shadow-lg transition-all hover:-translate-y-1">
                         Claim Your Free Event
-                    </button>
+                    </a>
                 </div>
             </div>
         </div>
@@ -77,9 +77,9 @@
                         <span>Live attendance list</span>
                     </li>
                 </ul>
-                <button @click="showChat = true; subject = 'Starter Event Inquiry'" class="block w-full py-3 px-4 bg-slate-50 hover:bg-green-50 text-slate-700 hover:text-green-700 font-bold text-center rounded-xl border border-slate-200 transition-colors">
+                <a href="/org/register" class="block w-full py-3 px-4 bg-slate-50 hover:bg-green-50 text-slate-700 hover:text-green-700 font-bold text-center rounded-xl border border-slate-200 transition-colors">
                     Choose Starter
-                </button>
+                </a>
             </div>
 
             <div class="bg-white rounded-2xl p-8 border-2 border-blue-100 shadow-xl relative transform md:-translate-y-4 z-10">
@@ -113,9 +113,9 @@
                         <span>Android phone scanning app</span>
                     </li>
                 </ul>
-                <button @click="showChat = true; subject = 'Standard Event Inquiry'" class="block w-full py-4 px-4 bg-[#1D4069] hover:bg-[#F07F22] text-white font-bold text-center rounded-xl shadow-lg transition-colors">
+                <a href="/org/register" class="block w-full py-4 px-4 bg-[#1D4069] hover:bg-[#F07F22] text-white font-bold text-center rounded-xl shadow-lg transition-colors">
                     Get Standard Access
-                </button>
+                </a>
                 <p class="text-[10px] text-center text-slate-400 mt-3 font-bold uppercase tracking-widest">Free trial applies to this tier</p>
             </div>
 

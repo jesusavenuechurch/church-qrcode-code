@@ -312,7 +312,7 @@ class CreateEvent extends CreateRecord
             ]);
 
         // ============================================================================
-        // STEP 3: Ticket Tiers
+        // STEP 3: Ticket Tiers (Responsive Fix)
         // ============================================================================
         $steps[] = Step::make('Ticket Tiers')
             ->icon('heroicon-o-ticket')
@@ -325,82 +325,84 @@ class CreateEvent extends CreateRecord
                         Forms\Components\TextInput::make('tier_name')
                             ->label('Tier Name')
                             ->required()
-                            ->placeholder('e.g., VIP, Gold, Early Bird')
-                            ->columnSpan(2),
+                            ->placeholder('e.g., VIP')
+                            ->columnSpan([
+                                'default' => 1,
+                                'md' => 2, // Takes half width on desktop
+                            ]),
 
                         Forms\Components\TextInput::make('price')
                             ->label('Price')
                             ->numeric()
                             ->required()
-                            ->step(0.01)
-                            ->minValue(0)
                             ->suffix('LSL')
-                            ->helperText('Set to 0 for free tickets')
-                            ->columnSpan(1),
+                            ->columnSpan([
+                                'default' => 1,
+                                'md' => 1,
+                            ]),
 
                         Forms\Components\TextInput::make('quantity_available')
                             ->label('Quantity')
                             ->numeric()
-                            ->nullable()
-                            ->minValue(1)
-                            ->helperText('Empty = unlimited')
-                            ->columnSpan(1),
+                            ->placeholder('∞')
+                            ->columnSpan([
+                                'default' => 1,
+                                'md' => 1,
+                            ]),
 
                         Forms\Components\TextInput::make('quantity_per_purchase')
                             ->label('Max Per Purchase')
                             ->numeric()
                             ->default(1)
-                            ->minValue(1)
-                            ->helperText('Maximum tickets a single customer can buy in one transaction')
-                            ->columnSpan(1),
+                            ->columnSpan([
+                                'default' => 1,
+                                'md' => 1,
+                            ]),
 
                         Forms\Components\Textarea::make('description')
-                            ->label('Benefits / Description')
+                            ->label('Benefits')
                             ->rows(2)
-                            ->placeholder('What does this tier include?')
                             ->columnSpanFull(),
 
-                                                Forms\Components\Toggle::make('allow_installments')
-                            ->label('Allow Installment Payments')
+                        Forms\Components\Toggle::make('allow_installments')
+                            ->label('Allow Installments')
                             ->default(false)
                             ->live()
-                            ->helperText('Enable clients to pay in multiple installments'),
-
-                        Forms\Components\TextInput::make('minimum_deposit_percentage')
-                            ->label('Minimum Deposit (%)')
-                            ->numeric()
-                            ->default(30)
-                            ->minValue(1)
-                            ->maxValue(100)
-                            ->suffix('%')
-                            ->visible(fn (Forms\Get $get) => $get('allow_installments'))
-                            ->required(fn (Forms\Get $get) => $get('allow_installments'))
-                            ->helperText('Minimum percentage clients must pay as first deposit'),
-
-                        Forms\Components\Textarea::make('installment_instructions')
-                            ->label('Installment Instructions')
-                            ->rows(3)
-                            ->visible(fn (Forms\Get $get) => $get('allow_installments'))
-                            ->helperText('Instructions shown to clients about payment installments')
-                            ->placeholder('Example: Pay minimum 30% deposit to secure your spot. Complete payment before event date.')
                             ->columnSpanFull(),
 
+                        Forms\Components\TextInput::make('minimum_deposit_percentage')
+                            ->label('Min Deposit (%)')
+                            ->numeric()
+                            ->suffix('%')
+                            ->visible(fn (Forms\Get $get) => $get('allow_installments'))
+                            ->columnSpan([
+                                'default' => 1,
+                                'md' => 1,
+                            ]),
+
                         Forms\Components\ColorPicker::make('color')
-                            ->label('QR Code Color')
-                            ->nullable()
-                            ->columnSpan(1),
+                            ->label('QR Color')
+                            ->columnSpan([
+                                'default' => 1,
+                                'md' => 1,
+                            ]),
 
                         Forms\Components\Toggle::make('is_active')
                             ->label('Active')
                             ->default(true)
-                            ->columnSpan(1),
+                            ->columnSpan([
+                                'default' => 1,
+                                'md' => 1,
+                            ]),
                     ])
-                    ->columns(4)
+                    // THIS IS THE FIX: Set columns based on screen size
+                    ->columns([
+                        'default' => 1, // Single column on mobile prevents overlapping
+                        'md' => 4,      // 4 columns on desktop
+                    ])
                     ->defaultItems(1)
-                    ->addActionLabel('Add Another Tier')
                     ->collapsible()
                     ->itemLabel(fn (array $state): ?string => $state['tier_name'] ?? 'New Tier')
-                    ->reorderableWithButtons()
                     ->columnSpanFull(),
             ]);
 

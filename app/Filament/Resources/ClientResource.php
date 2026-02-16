@@ -23,7 +23,19 @@ class ClientResource extends Resource
     /* ------------------------------------------------------------
      | Permissions & Scoping
      ------------------------------------------------------------ */
+    public static function canViewAny(): bool
+    {
+        $user = auth()->user();
 
+        // If they are an agent, they see NOTHING in the sidebar
+        if ($user?->isSalesAgent()) {
+            return false;
+        }
+
+        // Otherwise, allow admins/super-admins
+        return $user?->isSuperAdmin() || $user?->organization_id !== null;
+    }
+    
     public static function getEloquentQuery(): Builder
     {
         $query = parent::getEloquentQuery();

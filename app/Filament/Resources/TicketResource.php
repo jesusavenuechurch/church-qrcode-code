@@ -31,6 +31,19 @@ class TicketResource extends Resource
     protected static ?string $navigationGroup = 'Events';
     protected static ?string $recordTitleAttribute = 'ticket_number';
 
+    public static function canViewAny(): bool
+    {
+        $user = auth()->user();
+
+        // If they are an agent, they see NOTHING in the sidebar
+        if ($user?->isSalesAgent()) {
+            return false;
+        }
+
+        // Otherwise, allow admins/super-admins
+        return $user?->isSuperAdmin() || $user?->organization_id !== null;
+    }
+
     public static function getEloquentQuery(): Builder
     {
         $query = parent::getEloquentQuery();
@@ -193,59 +206,57 @@ class TicketResource extends Resource
                         Forms\Components\Textarea::make('reason')->label('Reason for Comp')->rows(2),
                     ])
                     ->action(function (array $data) {
-    $user = auth()->user();
-    DB::beginTransaction();
-    try {
-        $client = null;
+                        $user = auth()->user();
+                        DB::beginTransaction();
+                        try {
+                            $client = null;
 
-        // 1. Try to find by Phone within the organization
-        if (!empty($data['phone'])) {
-            $client = Client::where('phone', $data['phone'])
-                ->where('organization_id', $user->organization_id)
-                ->first();
-        }
+                            if (!empty($data['phone'])) {
+                                $client = Client::where('phone', $data['phone'])
+                                    ->where('organization_id', $user->organization_id)
+                                    ->first();
+                            }
 
-        // 2. If not found, try to find by Email within the organization
-        if (!$client && !empty($data['email'])) {
-            $client = Client::where('email', $data['email'])
-                ->where('organization_id', $user->organization_id)
-                ->first();
-        }
+                            if (!$client && !empty($data['email'])) {
+                                $client = Client::where('email', $data['email'])
+                                    ->where('organization_id', $user->organization_id)
+                                    ->first();
+                            }
 
-        // 3. If still no client, create a brand new one
-        if (!$client) {
-            $client = Client::create([
-                'full_name' => $data['full_name'],
-                'phone' => $data['phone'] ?? null,
-                'email' => $data['email'] ?? null,
-                'organization_id' => $user->organization_id,
-            ]);
-        } else {
-            // Optional: Update the existing client's name if it changed
-            $client->update(['full_name' => $data['full_name']]);
-        }
+                            if (!$client) {
+                                $client = Client::create([
+                                    'full_name' => $data['full_name'],
+                                    'phone' => $data['phone'] ?? null,
+                                    'email' => $data['email'] ?? null,
+                                    'organization_id' => $user->organization_id,
+                                ]);
+                            } else {
+                                $client->update(['full_name' => $data['full_name']]);
+                            }
 
-        $ticket = Ticket::create([
-            'event_id' => $data['event_id'],
-            'client_id' => $client->id,
-            'event_tier_id' => $data['tier_id'],
-            'created_by' => $user->id,
-            'has_whatsapp' => $data['has_whatsapp'] ?? false,
-            'preferred_delivery' => $data['has_whatsapp'] ? 'both' : 'email'
-        ]);
+                            $ticket = Ticket::create([
+                                'event_id' => $data['event_id'],
+                                'client_id' => $client->id,
+                                'event_tier_id' => $data['tier_id'],
+                                'created_by' => $user->id,
+                                'is_complimentary' => true,
+                                'amount' => 0,
+                                'has_whatsapp' => $data['has_whatsapp'] ?? false,
+                                'preferred_delivery' => $data['has_whatsapp'] ? 'both' : 'email'
+                            ]);
 
-        $ticket->markAsComplimentary($user->id, $data['reason'] ?? 'Admin Issued');
-        $ticket->generateQrCode();
+                            $ticket->markAsComplimentary($user->id, $data['reason'] ?? 'Admin Issued');
+                            $ticket->generateQrCode();
 
-        dispatch(fn() => $ticket->autoDeliverTicket())->afterResponse();
+                            dispatch(fn() => $ticket->autoDeliverTicket())->afterResponse();
 
-        DB::commit();
-        Notification::make()->title('Comp Ticket Issued')->success()->send();
-    } catch (\Exception $e) {
-        DB::rollBack();
-        Notification::make()->title('Error')->body($e->getMessage())->danger()->send();
-    }
-}),
+                            DB::commit();
+                            Notification::make()->title('Comp Ticket Issued')->success()->send();
+                        } catch (\Exception $e) {
+                            DB::rollBack();
+                            Notification::make()->title('Error')->body($e->getMessage())->danger()->send();
+                        }
+                    }),
 
                 // ===== BULK IMPORT TICKETS =====
                 Tables\Actions\Action::make('bulk_import')
@@ -256,6 +267,26 @@ class TicketResource extends Resource
                     ->modalHeading('Bulk Import Tickets')
                     ->modalDescription('Upload a CSV/Excel file to create multiple tickets at once')
                     ->modalWidth('2xl')
+                    ->before(function () {
+                        $user = auth()->user();
+                        
+                        if ($user->isSuperAdmin()) return;
+                        
+                        $package = \App\Models\OrganizationPackage::where('organization_id', $user->organization_id)
+                            ->where('status', 'active')
+                            ->first();
+
+                        if ($package && $package->status === 'exhausted') {
+                            $overageRate = $package->overage_ticket_rate;
+                            
+                            Notification::make()
+                                ->warning()
+                                ->title('Package Exhausted - Overage Charges Apply')
+                                ->body("Your package has been exhausted. Each ticket will be charged M" . number_format($overageRate, 2) . " as overage.")
+                                ->persistent()
+                                ->send();
+                        }
+                    })
                     ->form([
                         Forms\Components\Section::make('Event & Tier Selection')
                             ->schema([
@@ -296,6 +327,49 @@ class TicketResource extends Resource
                                     ->rows(2),
                             ])->columns(1),
 
+                        Forms\Components\Section::make('Package Status')
+                            ->schema([
+                                Forms\Components\Placeholder::make('overage_warning')
+                                    ->content(function () {
+                                        $user = auth()->user();
+                                        $package = \App\Models\OrganizationPackage::where('organization_id', $user->organization_id)
+                                            ->where('status', 'active')
+                                            ->first();
+
+                                        if (!$package) {
+                                            return new \Illuminate\Support\HtmlString('
+                                                <div class="p-3 bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 rounded-lg">
+                                                    <p class="text-sm font-semibold text-red-800 dark:text-red-200">⚠️ No Active Package</p>
+                                                    <p class="text-xs text-red-600 dark:text-red-300 mt-1">Please purchase a package to create tickets.</p>
+                                                </div>
+                                            ');
+                                        }
+
+                                        if ($package->status === 'exhausted') {
+                                            $overageRate = $package->overage_ticket_rate;
+                                            return new \Illuminate\Support\HtmlString("
+                                                <div class='p-3 bg-orange-50 dark:bg-orange-900/20 border border-orange-200 dark:border-orange-800 rounded-lg'>
+                                                    <p class='text-sm font-semibold text-orange-800 dark:text-orange-200'>⚠️ Package Exhausted - Overage Charges Apply</p>
+                                                    <p class='text-xs text-orange-600 dark:text-orange-300 mt-1'>
+                                                        Each ticket will be charged <strong>M" . number_format($overageRate, 2) . "</strong> as overage fee.
+                                                    </p>
+                                                </div>
+                                            ");
+                                        }
+
+                                        $remaining = $package->remaining_tickets;
+                                        return new \Illuminate\Support\HtmlString("
+                                            <div class='p-3 bg-green-50 dark:bg-green-900/20 border border-green-200 dark:border-green-800 rounded-lg'>
+                                                <p class='text-sm font-semibold text-green-800 dark:text-green-200'>✅ Package Active</p>
+                                                <p class='text-xs text-green-600 dark:text-green-300 mt-1'>
+                                                    <strong>{$remaining}</strong> ticket(s) remaining in your package.
+                                                </p>
+                                            </div>
+                                        ");
+                                    }),
+                            ])
+                            ->visible(fn () => !auth()->user()->isSuperAdmin()),
+
                         Forms\Components\Section::make('Upload File')
                             ->schema([
                                 FileUpload::make('file')
@@ -306,7 +380,7 @@ class TicketResource extends Resource
                                         'application/vnd.ms-excel',
                                         'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
                                     ])
-                                    ->maxSize(5120) // 5MB
+                                    ->maxSize(5120)
                                     ->required()
                                     ->helperText('Upload a CSV or Excel file with columns: full_name, phone, email (optional), has_whatsapp (optional)'),
 
@@ -342,10 +416,8 @@ class TicketResource extends Resource
                         $user = auth()->user();
                         
                         try {
-                            // Get uploaded file path
                             $filePath = storage_path('app/public/' . $data['file']);
 
-                            // Create importer
                             $import = new TicketsImport(
                                 eventId: $data['event_id'],
                                 tierId: $data['tier_id'],
@@ -355,16 +427,13 @@ class TicketResource extends Resource
                                 createdBy: $user->id
                             );
 
-                            // Process import
                             Excel::import($import, $filePath);
 
-                            // Build result message
                             $message = "✅ Successfully created {$import->successCount} ticket(s)";
                             
                             if ($import->errorCount > 0) {
                                 $message .= "\n⚠️ {$import->errorCount} row(s) had errors";
                                 
-                                // Show first 5 errors
                                 $errorDetails = collect($import->errors)
                                     ->take(5)
                                     ->map(fn($err) => "Row {$err['row']}: {$err['error']}")

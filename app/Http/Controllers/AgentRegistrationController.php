@@ -1,74 +1,76 @@
 <?php
-// app/Http/Controllers/AgentRegistrationController.php
 
 namespace App\Http\Controllers;
 
 use App\Models\Agent;
 use App\Models\Organization;
 use App\Models\User;
+use App\Models\OrganizationPackage;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Hash;
-use Illuminate\Support\Str;
+use Illuminate\Support\Facades\Auth;
 use Illuminate\Validation\Rules\Password;
+use Illuminate\Auth\Events\Registered;
 
 class AgentRegistrationController extends Controller
 {
-    /**
-     * Show organization registration form
-     */
-    public function showForm(string $token)
+    public function showForm(string $token = null)
     {
-        // Find agent by referral token
-        $agent = Agent::where('referral_token', $token)
-            ->where('is_active', true)
-            ->firstOrFail();
-
-        return view('public.agent-registration', compact('agent'));
+        $agent = null;
+        if ($token) {
+            $agent = Agent::where('referral_token', $token)
+                ->where('is_active', true)
+                ->where('status', 'approved')
+                ->first();
+        }
+        return view('public.org-register', compact('agent'));
     }
 
-    /**
-     * Process organization registration
-     */
-    public function submit(Request $request, string $token)
+    public function submit(Request $request, string $token = null)
     {
-        // Validate agent token
-        $agent = Agent::where('referral_token', $token)
-            ->where('is_active', true)
-            ->firstOrFail();
+        $agent = null;
+        if ($token) {
+            $agent = Agent::where('referral_token', $token)
+                ->where('is_active', true)
+                ->where('status', 'approved')
+                ->first();
+        }
 
-        // Validate input
         $validated = $request->validate([
-            // Organization details
             'org_name' => 'required|string|max:255',
-            'org_email' => 'required|email|max:255|unique:organizations,email',
             'org_phone' => 'required|string|max:20',
-            'org_description' => 'nullable|string|max:1000',
-            'org_website' => 'nullable|url|max:255',
-            
-            // Primary user details
+            'org_district' => 'nullable|string|max:255',
             'user_name' => 'required|string|max:255',
             'user_email' => 'required|email|max:255|unique:users,email',
             'user_password' => ['required', 'confirmed', Password::defaults()],
+            'tagline' => 'nullable|string|max:255',
+            'description' => 'nullable|string|max:1000',
+            'email' => 'nullable|email|max:255',
+            'contact_email' => 'nullable|email|max:255',
         ]);
 
         DB::beginTransaction();
         try {
-            // 1. Create Organization
+            // 1. Create Organization (Including Brand Life fields)
             $organization = Organization::create([
                 'name' => $validated['org_name'],
-                'email' => $validated['org_email'],
                 'phone' => $validated['org_phone'],
-                'description' => $validated['org_description'] ?? null,
-                'website' => $validated['org_website'] ?? null,
+                'org_district' => $validated['org_district'], // Map to your correct DB column
+                'tagline' => $validated['tagline'],
+                'description' => $validated['description'],
+                'email' => $validated['email'] ?? $validated['user_email'], // Fallback to user email
+                'contact_email' => $validated['contact_email'] ?? $validated['user_email'],
+                
                 'is_active' => true,
-                // ✅ Link to agent
-                'agent_id' => $agent->id,
-                'registered_via_agent_at' => now(),
-                'registration_source' => 'agent',
+                'agent_id' => $agent?->id,
+                'registered_via_agent_at' => $agent ? now() : null,
+                'registration_source' => $agent ? 'agent' : 'direct',
+                'agent_commission_packages_count' => 0,
+                'agent_commission_packages_limit' => 3,
             ]);
 
-            // 2. Create Primary User (Org Admin)
+            // 2. Create Primary User
             $user = User::create([
                 'name' => $validated['user_name'],
                 'email' => $validated['user_email'],
@@ -76,36 +78,24 @@ class AgentRegistrationController extends Controller
                 'organization_id' => $organization->id,
             ]);
 
-            // 3. Assign org_admin role (assuming you have Spatie roles)
             $user->assignRole('org_admin');
+            OrganizationPackage::createFreeTrialPackage($organization->id);
 
             DB::commit();
 
-            // 4. Send welcome email (optional)
-            // Mail::to($user->email)->send(new OrganizationWelcomeEmail($organization, $user));
+            event(new Registered($user));
+            Auth::guard('web')->login($user, true);
+            $request->session()->regenerate();
 
-            // 5. Redirect to success page with login link
-            return redirect()->route('agent.registration.success', [
-                'org' => $organization->slug,
+            return response()->json([
+                'status' => 'success',
+                'message' => 'Welcome to VENTIQ! Please check your email to verify your account.',
+                'redirect' => route('filament.admin.auth.email-verification.prompt'),
             ]);
 
         } catch (\Exception $e) {
             DB::rollBack();
-            
-            return back()
-                ->withErrors(['error' => 'Registration failed. Please try again.'])
-                ->withInput();
+            return response()->json(['status' => 'error', 'message' => $e->getMessage()], 422);
         }
-    }
-
-    /**
-     * Show success page
-     */
-    public function success(Request $request)
-    {
-        $orgSlug = $request->get('org');
-        $organization = Organization::where('slug', $orgSlug)->firstOrFail();
-
-        return view('public.agent-registration-success', compact('organization'));
     }
 }

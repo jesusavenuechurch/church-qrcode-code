@@ -220,6 +220,25 @@ class RegistrationController extends Controller
 
             DB::commit();
 
+            // Send pending notification emails
+            foreach ($createdTickets as $ticket) {
+                $ticket->load(['client', 'event', 'tier', 'event.organization']);
+
+                if (!$ticket->client->email) {
+                    continue; // No email, skip
+                }
+
+                if ($isFree) {
+                    // Free ticket — send approved mail directly
+                    \Mail::to($ticket->client->email)
+                        ->send(new \App\Mail\TicketApprovedMail($ticket));
+                } else {
+                    // Paid ticket — send pending mail
+                    \Mail::to($ticket->client->email)
+                        ->send(new \App\Mail\TicketPendingMail($ticket));
+                }
+            }
+
             // Redirect to confirmation with first ticket
             return redirect()->route('registration.confirmation', [
                 'orgSlug' => $orgSlug,

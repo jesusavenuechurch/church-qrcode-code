@@ -14,7 +14,7 @@ return new class extends Migration
         Schema::table('clients', function (Blueprint $table) {
             // If email was ever unique before, drop the unique index first
             // (this line is safe even if it doesn't exist, as long as name matches)
-            $table->dropUnique('clients_email_unique');
+           // $table->dropUnique('clients_email_unique');
 
             $table->string('email')->nullable()->change();
         });

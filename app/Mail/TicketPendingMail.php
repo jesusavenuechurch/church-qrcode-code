@@ -12,10 +12,15 @@ class TicketPendingMail extends Mailable
     use Queueable, SerializesModels;
 
     public Ticket $ticket;
+    public $paymentMethods;
 
     public function __construct(Ticket $ticket)
     {
         $this->ticket = $ticket;
+        $this->paymentMethods = \App\Models\OrganizationPaymentMethod::where('organization_id', $ticket->event->organization_id)
+        ->where('is_active', true)
+        ->ordered()
+        ->get();
     }
 
     public function build()
@@ -30,6 +35,7 @@ class TicketPendingMail extends Mailable
                 'event' => $this->ticket->event,
                 'tier' => $this->ticket->tier,
                 'organization' => $this->ticket->event->organization,
+                'paymentMethods' => $this->paymentMethods,
             ]);
     }
 }

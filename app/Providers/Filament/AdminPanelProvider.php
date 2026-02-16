@@ -1,4 +1,5 @@
 <?php
+
 namespace App\Providers\Filament;
 
 use Filament\Http\Middleware\Authenticate;
@@ -16,7 +17,7 @@ use Illuminate\Foundation\Http\Middleware\VerifyCsrfToken;
 use Illuminate\Routing\Middleware\SubstituteBindings;
 use Illuminate\Session\Middleware\StartSession;
 use Illuminate\View\Middleware\ShareErrorsFromSession;
-use Filament\View\PanelsRenderHook; // Needed for CSS injection
+use Filament\View\PanelsRenderHook;
 use Illuminate\Support\Facades\Blade;
 
 class AdminPanelProvider extends PanelProvider
@@ -27,26 +28,35 @@ class AdminPanelProvider extends PanelProvider
             ->default()
             ->id('admin')
             ->path('admin')
-            ->login() // Enables the login page
+            ->login()
+            ->registration() 
+            ->emailVerification()
 
-            // 🎨 BRANDING: Navy & Orange
+            // 🎨 BRANDING
             ->brandName('VENTIQ')
-            ->brandLogo(asset('images/1.png')) // Ensure this image exists in public/images
+            ->brandLogo(asset('images/1.png'))
             ->brandLogoHeight('5.5rem')
             ->favicon(asset('favicon.ico'))
-            
-            // 🎨 COLORS: Replacing Amber with Ventiq Identity
-            ->colors([
-                'primary' => '#1D4069', // Navy Blue
-                'warning' => '#F07F22', // Orange (Use this for "Pending" statuses)
-                'gray' => Color::Slate, // Slate works best with Navy
+            ->assets([
+            \Filament\Support\Assets\Css::make('ventiq-custom', asset('css/ventiq-admin.css')),
             ])
-            ->font('Inter') // Modern, clean font
+            ->maxContentWidth('full')
+            
+            // 🎨 COLORS
+            ->colors([
+                'primary' => '#1D4069',
+                'warning' => '#F07F22',
+                'gray' => Color::Slate,
+            ])
+            ->font('Inter')
 
-            // 🎨 CUSTOM LOGIN STYLING (CSS Injection)
+            // 🎨 CUSTOM STYLING + DRIVER.JS
             ->renderHook(
                 PanelsRenderHook::HEAD_END,
-                fn (): string => Blade::render(<<<HTML
+                fn (): string => Blade::render(<<<'HTML'
+                    <!-- Driver.js CSS -->
+                    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/driver.js@1.0.1/dist/driver.css"/>
+                    
                     <style>
                         /* Login Page Background */
                         .fi-body.fi-panel-admin.fi-page-login {
@@ -67,7 +77,7 @@ class AdminPanelProvider extends PanelProvider
                             border-radius: 1.5rem;
                         }
 
-                        /* Primary Button (Sign In) */
+                        /* Primary Button */
                         .fi-page-login .fi-btn-primary {
                             background-color: #1D4069 !important;
                             border-radius: 0.75rem;
@@ -80,8 +90,88 @@ class AdminPanelProvider extends PanelProvider
                             transform: translateY(-1px);
                             box-shadow: 0 4px 12px rgba(29, 64, 105, 0.2);
                         }
+
+                        /* ========== DRIVER.JS CUSTOM STYLING ========== */
+                        .driver-popover {
+                            background: linear-gradient(135deg, #1D4069 0%, #2A5298 100%) !important;
+                            border: 2px solid rgba(240, 127, 34, 0.3) !important;
+                            border-radius: 1.5rem !important;
+                            box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.5) !important;
+                            max-width: 400px !important;
+                        }
+                        
+                        .driver-popover-title {
+                            color: white !important;
+                            font-size: 1.125rem !important;
+                            font-weight: 900 !important;
+                            text-transform: uppercase !important;
+                            letter-spacing: 0.05em !important;
+                            margin-bottom: 0.5rem !important;
+                        }
+                        
+                        .driver-popover-description {
+                            color: rgba(255, 255, 255, 0.85) !important;
+                            font-size: 0.875rem !important;
+                            line-height: 1.6 !important;
+                        }
+                        
+                        .driver-popover-footer button {
+                            background: #F07F22 !important;
+                            color: white !important;
+                            border: none !important;
+                            border-radius: 0.75rem !important;
+                            padding: 0.625rem 1.5rem !important;
+                            font-weight: 700 !important;
+                            text-transform: uppercase !important;
+                            font-size: 0.75rem !important;
+                            letter-spacing: 0.1em !important;
+                            transition: all 0.2s !important;
+                        }
+                        
+                        .driver-popover-footer button:hover {
+                            background: #d96a1a !important;
+                            transform: translateY(-2px) !important;
+                            box-shadow: 0 10px 20px rgba(240, 127, 34, 0.3) !important;
+                        }
+                        
+                        .driver-popover-prev-btn {
+                            background: rgba(255, 255, 255, 0.1) !important;
+                        }
+                        
+                        .driver-popover-prev-btn:hover {
+                            background: rgba(255, 255, 255, 0.2) !important;
+                            transform: translateY(-2px) !important;
+                        }
+                        
+                        .driver-popover-arrow-side-top { border-top-color: #1D4069 !important; }
+                        .driver-popover-arrow-side-bottom { border-bottom-color: #1D4069 !important; }
+                        .driver-popover-arrow-side-left { border-left-color: #1D4069 !important; }
+                        .driver-popover-arrow-side-right { border-right-color: #1D4069 !important; }
+
+                        /* Pulse animation for highlighted elements */
+                        @keyframes driver-pulse {
+                            0%, 100% { box-shadow: 0 0 0 0 rgba(240, 127, 34, 0.7); }
+                            50% { box-shadow: 0 0 0 20px rgba(240, 127, 34, 0); }
+                        }
+                        
+                        .driver-active-element {
+                            animation: driver-pulse 2s infinite !important;
+                        }
+
+                        /* Progress indicator styling */
+                        .driver-popover-progress-text {
+                            color: rgba(255, 255, 255, 0.6) !important;
+                            font-size: 0.75rem !important;
+                            font-weight: 600 !important;
+                        }
                     </style>
                 HTML)
+            )
+
+            // 🎯 DRIVER.JS SCRIPT (BODY END)
+            ->renderHook(
+                 PanelsRenderHook::BODY_END,
+    fn (): string => view('filament.driver-tour')->render()
             )
 
             // ✅ SIDEBAR & UX
@@ -97,14 +187,11 @@ class AdminPanelProvider extends PanelProvider
             ->pages([
                 Pages\Dashboard::class,
             ])
-           // ->discoverWidgets(in: app_path('Filament/Widgets'), for: 'App\\Filament\\Widgets')
             ->widgets([
-              //  Widgets\AccountWidget::class,
-                // Widgets\FilamentInfoWidget::class, // Commented out to clean up dashboard
-              //  \App\Filament\Widgets\StatsOverview::class,
-             // \App\Filament\Widgets\ActionLauncher::class,
                 \App\Filament\Widgets\TicketStatsWidget::class,
-                \App\Filament\Widgets\PendingApprovalsWidget::class,
+                \App\Filament\Widgets\MobileAppDownload::class,
+                \App\Filament\Widgets\WelcomeWidget::class,
+                \App\Filament\Widgets\AgentWelcomeWidget::class,
             ])
 
             // MIDDLEWARE

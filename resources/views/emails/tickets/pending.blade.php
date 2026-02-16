@@ -36,32 +36,39 @@
 
             <div class="payment-box">
                 <h3>⚠️ Payment Required</h3>
-                <p>Please complete your payment using one of the following methods:</p>
-                
-                @if($ticket->payment_method === 'mpesa')
-                    <h4>M-Pesa Payment</h4>
-                    <ol>
-                        <li>Open your M-Pesa app</li>
-                        <li>Send <strong>{{ number_format($ticket->amount) }} LSL</strong> to: <strong>+266 5000 0000</strong></li>
-                        <li>Use reference: <strong>{{ $ticket->ticket_number }}</strong></li>
-                    </ol>
-                @elseif($ticket->payment_method === 'ecocash')
-                    <h4>EcoCash Payment</h4>
-                    <ol>
-                        <li>Dial *151# on your phone</li>
-                        <li>Send <strong>{{ number_format($ticket->amount) }} LSL</strong> to: <strong>+266 6000 0000</strong></li>
-                        <li>Use reference: <strong>{{ $ticket->ticket_number }}</strong></li>
-                    </ol>
-                @elseif($ticket->payment_method === 'bank')
-                    <h4>Bank Transfer Details</h4>
-                    <p><strong>Bank:</strong> Standard Lesotho Bank</p>
-                    <p><strong>Account Name:</strong> {{ $organization->name }}</p>
-                    <p><strong>Account Number:</strong> 1234567890</p>
-                    <p><strong>Amount:</strong> {{ number_format($ticket->amount) }} LSL</p>
-                    <p><strong>Reference:</strong> {{ $ticket->ticket_number }}</p>
-                @endif
+                <p>Please complete your payment of <strong>{{ number_format($ticket->amount) }} LSL</strong> using one of the following methods:</p>
 
-                <p style="margin-top: 15px;"><strong>Important:</strong> Always use your ticket number <strong>{{ $ticket->ticket_number }}</strong> as the payment reference.</p>
+                @foreach($paymentMethods as $method)
+                    <div style="background: white; border: 1px solid #e0e0e0; border-radius: 8px; padding: 15px; margin: 12px 0;">
+                        <h4 style="margin: 0 0 8px 0;">{{ $method->label }}</h4>
+
+                        @if($method->payment_method !== 'cash')
+                            <p style="margin: 4px 0;">
+                                <strong>{{ $method->getAccountFieldLabel() }}:</strong> 
+                                {{ $method->account_number }}
+                            </p>
+                            @if($method->account_name)
+                            <p style="margin: 4px 0;">
+                                <strong>Account Name:</strong> 
+                                {{ $method->account_name }}
+                            </p>
+                            @endif
+                        @else
+                            <p style="margin: 4px 0; color: #666;">Pay in person at the venue.</p>
+                        @endif
+
+                        @if($method->instructions)
+                            <p style="margin: 8px 0 0 0; color: #555; font-size: 13px;">
+                                {{ $method->instructions }}
+                            </p>
+                        @endif
+                    </div>
+                @endforeach
+
+                <p style="margin-top: 15px;">
+                    <strong>Important:</strong> Always use your ticket number 
+                    <strong>{{ $ticket->ticket_number }}</strong> as the payment reference.
+                </p>
             </div>
 
             <h3>What Happens Next?</h3>

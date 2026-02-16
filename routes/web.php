@@ -14,31 +14,12 @@ use Spatie\Sitemap\Tags\Url;
 use Illuminate\Support\Facades\Mail;
 use Illuminate\Http\Request;
 use App\Http\Controllers\AgentRegistrationController;
+use App\Http\Controllers\AgentApplicationController;
+use App\Http\Controllers\ContactInquiryController;
+use Illuminate\Foundation\Auth\EmailVerificationRequest;
+use App\Models\Organization;
 
-Route::post('/contact', function (Request $request) {
-    $data = $request->validate([
-        'name'    => 'required|string|max:255',
-        'phone'   => 'required|string|max:20', // Crucial for Lesotho/WhatsApp context
-        'email'   => 'nullable|email',         // Now optional
-        'subject' => 'required|string',
-        'message' => 'required|string',
-    ]);
-
-    $emailContent = "New VENTIQ Intelligence Inquiry\n"
-                  . "------------------------------\n"
-                  . "Name: {$data['name']}\n"
-                  . "Phone: {$data['phone']}\n"
-                  . "Email: " . ($data['email'] ?? 'Not provided') . "\n"
-                  . "Subject: {$data['subject']}\n\n"
-                  . "Message:\n{$data['message']}";
-
-    Mail::raw($emailContent, function ($message) use ($data) {
-        $message->to('support@ventiq.co.ls')
-                ->subject("Inquiry: {$data['subject']} - {$data['name']}");
-    });
-
-    return response()->json(['success' => true]);
-});
+Route::post('/contact', [ContactInquiryController::class, 'store'])->name('contact.store');
 
 Route::get('/sitemap.xml', function () {
     $sitemap = Sitemap::create()
@@ -81,8 +62,25 @@ Route::get('/sitemap.xml', function () {
 
 
 Route::get('/', function () {
-    return view('welcome');
+    $activeOrgs = Organization::where('is_active', true)->count();
+    return view('welcome', compact('activeOrgs'));
 });
+
+// 1. The handler for the email link (Fixes your 'verification.verify' error)
+Route::get('/email/verify/{id}/{hash}', function (EmailVerificationRequest $request) {
+    $request->fulfill();
+    return redirect('/admin'); 
+})->middleware(['auth', 'signed'])->name('verification.verify');
+
+// 2. The page users see if they try to access /admin without verifying first
+Route::get('/email/verify', function () {
+    return view('auth.verify-email');
+})->middleware('auth')->name('verification.notice');
+
+// Redirect the standard login route to your Filament login page
+Route::get('/login', function () {
+    return redirect()->route('filament.admin.auth.login');
+})->name('login');
 
 Route::get('/events', [PublicEventController::class, 'browseAll'])
     ->name('events.browse');
@@ -167,8 +165,25 @@ Route::get('/access', function () {
     return view('public.org-admin');
 })->name('pricing');
 
+// Direct organization registration (NO agent token)
+Route::get('/org/register', [AgentRegistrationController::class, 'showForm'])
+    ->name('org.register.direct');
+
+Route::post('/org/register', [AgentRegistrationController::class, 'submit'])
+    ->name('org.register.submit');
+
+// Agent referral registration (WITH agent token)
 Route::get('/org/register/{token}', [AgentRegistrationController::class, 'showForm'])
     ->name('agent.registration.form');
 
 Route::post('/org/register/{token}', [AgentRegistrationController::class, 'submit'])
     ->name('agent.registration.submit');
+
+// Success page (shared by both)
+Route::get('/org/registration-success', [AgentRegistrationController::class, 'success'])
+    ->name('agent.registration.success');
+
+Route::get('/become-agent', [AgentApplicationController::class, 'showForm'])->name('agent.apply');
+Route::post('/become-agent', [AgentApplicationController::class, 'submit'])->name('agent.submit');
+Route::get('/reset-password/{token}', [AgentApplicationController::class, 'showResetForm'])->name('password.reset');
+Route::post('/reset-password', [AgentApplicationController::class, 'resetPassword'])->name('password.update');

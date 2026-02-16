@@ -12,7 +12,6 @@ use Filament\Notifications\Notification;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Model;
 use App\Filament\Resources\EventResource\Pages;
-use Illuminate\Support\Str;
 
 class EventResource extends Resource
 {
@@ -28,7 +27,13 @@ class EventResource extends Resource
 
     public static function canViewAny(): bool
     {
-        return auth()->user()?->hasAnyPermission([
+        $user = auth()->user();
+
+        if ($user?->isSalesAgent()) {
+            return false;
+        }
+
+        return $user?->hasAnyPermission([
             'view_event',
             'create_event',
         ]) ?? false;
@@ -36,7 +41,23 @@ class EventResource extends Resource
 
     public static function canCreate(): bool
     {
-        return auth()->user()?->hasPermissionTo('create_event') ?? false;
+        $user = auth()->user();
+
+        if (! $user?->hasPermissionTo('create_event')) {
+            return false;
+        }
+
+        if ($user->isSuperAdmin()) {
+            return true;
+        }
+
+        $organization = $user->organization;
+
+        return $organization?->packages()
+            ->where('status', 'active')
+            ->get()
+            ->filter(fn ($package) => $package->hasEventsRemaining())
+            ->isNotEmpty() ?? false;
     }
 
     public static function canEdit(Model $record): bool
@@ -98,9 +119,6 @@ class EventResource extends Resource
     public static function form(Form $form): Form
     {
         return $form->schema([
-            // Internal UX flags (not persisted)
-            Forms\Components\Hidden::make('slug_locked')->default(false),
-            Forms\Components\Hidden::make('tagline_locked')->default(false),
 
             Forms\Components\Section::make('Basic Information')
                 ->schema([
@@ -110,53 +128,52 @@ class EventResource extends Resource
                         ->searchable()
                         ->disabled(fn () => ! auth()->user()?->isSuperAdmin())
                         ->default(auth()->user()?->organization_id)
-                        ->dehydrated(true),
+                        ->dehydrated(true)
+                        ->columnSpanFull(),
 
                     Forms\Components\TextInput::make('name')
                         ->label('Event Name')
                         ->required()
-                        ->live(debounce: 500)
-                        ->afterStateUpdated(function ($state, callable $set, callable $get) {
-                            if (! $get('slug_locked')) {
-                                $set('slug', Str::slug($state));
-                            }
+                        ->columnSpan(1),
 
-                            if (! $get('tagline_locked')) {
-                                $set('tagline', $state);
-                            }
-                        }),
+                    Forms\Components\TextInput::make('tagline')
+                        ->label('Tagline')
+                        ->helperText('Short catchy description. Leave blank to auto-generate from event name.')
+                        ->columnSpan(1),
 
-                    Forms\Components\TextInput::make('slug')
-                        ->label('Public URL Slug')
-                        ->required()
-                        ->unique(ignoreRecord: true)
-                        ->afterStateUpdated(fn ($set) => $set('slug_locked', true))
-                        ->helperText('Auto-generated from event name, editable'),
-                           
                     Forms\Components\FileUpload::make('banner_image')
                         ->label('Event Poster / Flyer')
                         ->image()
                         ->disk('public')
                         ->directory('event-banners')
-                        ->maxSize(10240) 
-                        ->imageEditor() // Allows users to crop manually IF they want, but doesn't force it
+                        ->maxSize(10240)
+                        ->imageEditor()
                         ->imageEditorAspectRatios([
-                            null, // Allows free-form aspect ratio (perfect for vertical posters)
+                            null,
                             '16:9',
                             '4:5',
                         ])
-                        ->helperText('Upload the full event poster. No forced cropping. Max 10MB for high-quality zoom.')
-                        ->columnSpanFull()
+                        ->helperText('Upload the full event poster. No forced cropping. Max 10MB.')
                         ->acceptedFileTypes(['image/jpeg', 'image/png', 'image/jpg', 'image/webp'])
                         ->previewable(true)
                         ->downloadable()
-                        ->openable(),
-                    
+                        ->openable()
+                        ->columnSpanFull(),
+
                     Forms\Components\Toggle::make('is_public')
                         ->label('Public Event')
-                        ->default(true),
+                        ->default(true)
+                        ->columnSpanFull(),
                 ])
                 ->columns(2),
+
+            Forms\Components\Section::make('Description')
+                ->schema([
+                    Forms\Components\Textarea::make('description')
+                        ->label('Full Description')
+                        ->rows(4)
+                        ->columnSpanFull(),
+                ]),
 
             Forms\Components\Section::make('Schedule')
                 ->schema([
@@ -177,28 +194,32 @@ class EventResource extends Resource
                         ->label('Venue Name')
                         ->maxLength(255),
 
+                    Forms\Components\TextInput::make('capacity')
+                        ->label('Maximum Capacity')
+                        ->numeric()
+                        ->nullable()
+                        ->helperText('Leave empty for unlimited'),
+
                     Forms\Components\Textarea::make('location')
                         ->label('Full Address')
                         ->rows(3)
-                        ->maxLength(500),
-                ]),
-
-            Forms\Components\Section::make('Capacity & Status')
-                ->schema([
-                    Forms\Components\TextInput::make('capacity')
-                        ->numeric()
-                        ->nullable(),
-
-                    Forms\Components\Select::make('status')
-                        ->options([
-                            'draft' => 'Draft',
-                            'published' => 'Published',
-                            'live' => 'Live',
-                            'closed' => 'Closed',
-                        ])
-                        ->default('draft'),
+                        ->maxLength(500)
+                        ->columnSpanFull(),
                 ])
                 ->columns(2),
+
+            Forms\Components\Section::make('Status')
+                ->schema([
+                    Forms\Components\Select::make('status')
+                        ->options([
+                            'draft'     => 'Draft',
+                            'published' => 'Published',
+                            'live'      => 'Live',
+                            'closed'    => 'Closed',
+                        ])
+                        ->default('draft')
+                        ->required(),
+                ]),
 
             Forms\Components\Section::make('Payment Options')
                 ->description('Configure installment payment settings for this event')
@@ -208,7 +229,7 @@ class EventResource extends Resource
                         ->default(false)
                         ->live()
                         ->helperText('Enable clients to pay in multiple installments'),
-                    
+
                     Forms\Components\TextInput::make('minimum_deposit_percentage')
                         ->label('Minimum Deposit (%)')
                         ->numeric()
@@ -219,7 +240,7 @@ class EventResource extends Resource
                         ->visible(fn (Forms\Get $get) => $get('allow_installments'))
                         ->required(fn (Forms\Get $get) => $get('allow_installments'))
                         ->helperText('Minimum percentage clients must pay as first deposit'),
-                    
+
                     Forms\Components\Textarea::make('installment_instructions')
                         ->label('Installment Instructions')
                         ->rows(3)
@@ -230,21 +251,11 @@ class EventResource extends Resource
                 ])
                 ->collapsible()
                 ->collapsed(),
-
-            Forms\Components\Section::make('Description')
-                ->schema([
-                    Forms\Components\TextInput::make('tagline')
-                        ->afterStateUpdated(fn ($set) => $set('tagline_locked', true))
-                        ->helperText('Auto-generated from name, editable'),
-
-                    Forms\Components\Textarea::make('description')
-                        ->rows(4),
-                ]),
         ]);
     }
 
     /* ------------------------------------------------------------
-     | Table (OPTIMIZED - NO HORIZONTAL SCROLL)
+     | Table
      ------------------------------------------------------------ */
 
     public static function table(Table $table): Table
@@ -252,7 +263,6 @@ class EventResource extends Resource
         return $table
             ->defaultSort('event_date')
             ->columns([
-                // ALWAYS VISIBLE - Core Info (3 columns)
                 Tables\Columns\TextColumn::make('name')
                     ->label('Event')
                     ->searchable()
@@ -270,13 +280,12 @@ class EventResource extends Resource
                 Tables\Columns\BadgeColumn::make('status')
                     ->label('Status')
                     ->colors([
-                        'gray' => 'draft',
-                        'info' => 'published',
+                        'gray'    => 'draft',
+                        'info'    => 'published',
                         'success' => 'live',
-                        'danger' => 'closed',
+                        'danger'  => 'closed',
                     ]),
 
-                // EXPANDABLE - Click column icon to show/hide
                 Tables\Columns\IconColumn::make('is_public')
                     ->label('Public')
                     ->boolean()
@@ -286,8 +295,8 @@ class EventResource extends Resource
                     ->label('Installments')
                     ->boolean()
                     ->toggleable(isToggledHiddenByDefault: false)
-                    ->tooltip(fn ($record) => $record->allow_installments 
-                        ? "Min deposit: {$record->minimum_deposit_percentage}%" 
+                    ->tooltip(fn ($record) => $record->allow_installments
+                        ? "Min deposit: {$record->minimum_deposit_percentage}%"
                         : 'Installments disabled'),
 
                 Tables\Columns\TextColumn::make('minimum_deposit_percentage')
@@ -333,13 +342,12 @@ class EventResource extends Resource
                 Tables\Columns\IconColumn::make('banner_image')
                     ->label('Banner')
                     ->boolean()
-                    ->getStateUsing(fn ($record) => !empty($record->banner_image))
+                    ->getStateUsing(fn ($record) => ! empty($record->banner_image))
                     ->toggleable(isToggledHiddenByDefault: true)
                     ->tooltip(fn ($record) => $record->banner_image ? 'Has banner' : 'No banner'),
             ])
 
             ->actions([
-                // PRIMARY ACTION
                 Tables\Actions\Action::make('public_link')
                     ->label('View')
                     ->icon('heroicon-o-link')
@@ -354,30 +362,28 @@ class EventResource extends Resource
                         'filament.modals.event-url',
                         [
                             'event' => $record,
-                            'url' => $record->public_url,
+                            'url'   => $record->public_url,
                         ]
                     ))
                     ->modalSubmitAction(false),
 
-                // SECONDARY
                 Tables\Actions\ActionGroup::make([
                     Tables\Actions\EditAction::make(),
-                    
+
                     Tables\Actions\Action::make('toggle_installments')
                         ->label(fn ($record) => $record->allow_installments ? 'Disable Installments' : 'Enable Installments')
                         ->icon('heroicon-o-banknotes')
                         ->color(fn ($record) => $record->allow_installments ? 'warning' : 'success')
                         ->requiresConfirmation()
                         ->action(function ($record) {
-                            $newState = !$record->allow_installments;
-                            $record->update(['allow_installments' => $newState]);
-                            
+                            $record->update(['allow_installments' => ! $record->allow_installments]);
+
                             Notification::make()
-                                ->title($newState ? 'Installments Enabled' : 'Installments Disabled')
+                                ->title($record->allow_installments ? 'Installments Enabled' : 'Installments Disabled')
                                 ->success()
                                 ->send();
                         }),
-                    
+
                     Tables\Actions\DeleteAction::make(),
                 ])
                 ->icon('heroicon-o-ellipsis-vertical'),
@@ -386,25 +392,25 @@ class EventResource extends Resource
             ->filters([
                 Tables\Filters\SelectFilter::make('status')
                     ->options([
-                        'draft' => 'Draft',
+                        'draft'     => 'Draft',
                         'published' => 'Published',
-                        'live' => 'Live',
-                        'closed' => 'Closed',
+                        'live'      => 'Live',
+                        'closed'    => 'Closed',
                     ]),
-                
+
                 Tables\Filters\TernaryFilter::make('allow_installments')
                     ->label('Installments')
                     ->placeholder('All events')
                     ->trueLabel('Enabled')
                     ->falseLabel('Disabled'),
-                
+
                 Tables\Filters\TernaryFilter::make('is_public')
                     ->label('Public')
                     ->placeholder('All events')
                     ->trueLabel('Public')
                     ->falseLabel('Private'),
             ])
-            
+
             ->bulkActions([
                 Tables\Actions\BulkAction::make('enable_installments')
                     ->label('Enable Installments')
@@ -413,13 +419,13 @@ class EventResource extends Resource
                     ->requiresConfirmation()
                     ->action(function ($records) {
                         $records->each->update(['allow_installments' => true]);
-                        
+
                         Notification::make()
                             ->title('Installments enabled for ' . $records->count() . ' event(s)')
                             ->success()
                             ->send();
                     }),
-                
+
                 Tables\Actions\BulkAction::make('disable_installments')
                     ->label('Disable Installments')
                     ->icon('heroicon-o-x-circle')
@@ -427,13 +433,13 @@ class EventResource extends Resource
                     ->requiresConfirmation()
                     ->action(function ($records) {
                         $records->each->update(['allow_installments' => false]);
-                        
+
                         Notification::make()
                             ->title('Installments disabled for ' . $records->count() . ' event(s)')
                             ->success()
                             ->send();
                     }),
-                
+
                 Tables\Actions\DeleteBulkAction::make(),
             ]);
     }
@@ -445,9 +451,9 @@ class EventResource extends Resource
     public static function getPages(): array
     {
         return [
-            'index' => Pages\ListEvents::route('/'),
+            'index'  => Pages\ListEvents::route('/'),
             'create' => Pages\CreateEvent::route('/create'),
-            'edit' => Pages\EditEvent::route('/{record}/edit'),
+            'edit'   => Pages\EditEvent::route('/{record}/edit'),
         ];
     }
 }

@@ -6,9 +6,11 @@ use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Support\Str;
+use Illuminate\Database\Eloquent\Factories\HasFactory;
 
 class Event extends Model
 {
+    use HasFactory;
     protected $fillable = [
         'organization_id',
         'name',
@@ -27,6 +29,7 @@ class Event extends Model
         'minimum_deposit_percentage',
         'installment_instructions',
         'banner_image',
+        'organization_package_id',
     ];
 
     protected $casts = [
@@ -47,11 +50,17 @@ class Event extends Model
         parent::boot();
 
         static::creating(function ($event) {
+            // Auto-generate slug if not provided
             if (empty($event->slug)) {
                 $event->slug = static::generateUniqueSlug(
                     $event->name,
                     $event->organization_id
                 );
+            }
+
+            // Auto-populate tagline from name if left blank
+            if (empty($event->tagline)) {
+                $event->tagline = $event->name;
             }
         });
 
@@ -131,5 +140,27 @@ class Event extends Model
     {
         return $this->tickets()
             ->whereNotNull('checked_in_at');
+    }
+
+    public function package()
+    {
+        return $this->belongsTo(OrganizationPackage::class, 'organization_package_id');
+    }
+
+    /**
+     * Check if this specific event can issue more tickets 
+     * based on the package it was created under.
+     */
+    public function hasPackageCapacity(int $quantity = 1, bool $isComp = false): bool
+    {
+        if (!$this->package) {
+            return false;
+        }
+
+        if ($isComp) {
+            return ($this->package->comp_tickets_used + $quantity) <= $this->package->comp_tickets_included;
+        }
+
+        return ($this->package->tickets_used + $quantity) <= $this->package->tickets_included;
     }
 }

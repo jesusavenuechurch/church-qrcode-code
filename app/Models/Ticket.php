@@ -27,7 +27,7 @@ class Ticket extends Model
         // ✅ NEW: WhatsApp delivery fields
         'preferred_delivery', 'has_whatsapp', 'delivery_status',
         'whatsapp_delivered_at', 'email_delivered_at', 'delivery_log', 'amount_paid',
-        'is_complimentary', 'complimentary_issued_by', 'complimentary_reason',
+        'is_complimentary', 'complimentary_issued_by', 'complimentary_reason', 'organization_package_id',
     ];
 
     protected $casts = [
@@ -782,5 +782,10 @@ class Ticket extends Model
     public function routeNotificationForDatabase()
     {
         return $this->client;
+    }
+
+    public function package(): BelongsTo
+    {
+        return $this->belongsTo(OrganizationPackage::class, 'organization_package_id');
     }
 }

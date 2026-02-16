@@ -28,13 +28,6 @@ class CreateEventWizard extends Page implements Forms\Contracts\HasForms
                 Step::make('Event Details')
                     ->schema([
                         Forms\Components\TextInput::make('name')
-                            ->required()
-                            ->live(onBlur: true)
-                            ->afterStateUpdated(fn ($state, callable $set) =>
-                                $set('slug', str($state)->slug())
-                            ),
-
-                        Forms\Components\TextInput::make('slug')
                             ->required(),
 
                         Forms\Components\DateTimePicker::make('event_date')

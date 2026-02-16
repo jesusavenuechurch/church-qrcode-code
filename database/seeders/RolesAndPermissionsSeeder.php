@@ -84,6 +84,20 @@ class RolesAndPermissionsSeeder extends Seeder
         Permission::firstOrCreate(['name' => 'edit_payment_method']);
         Permission::firstOrCreate(['name' => 'delete_payment_method']);
 
+        // ===== NEW: PACKAGE PERMISSIONS =====
+        Permission::firstOrCreate(['name' => 'view_packages']);
+        Permission::firstOrCreate(['name' => 'purchase_packages']);
+        Permission::firstOrCreate(['name' => 'approve_package_purchase']); // For super admin manual approval
+        Permission::firstOrCreate(['name' => 'manage_packages']); // Super admin only
+
+        // Agent permissions
+        Permission::firstOrCreate(['name' => 'view_agents']);
+        Permission::firstOrCreate(['name' => 'create_agent']);
+        Permission::firstOrCreate(['name' => 'edit_agent']);
+        Permission::firstOrCreate(['name' => 'delete_agent']);
+        Permission::firstOrCreate(['name' => 'view_agent_commissions']);
+        Permission::firstOrCreate(['name' => 'approve_commissions']);
+
         echo "✅ " . Permission::count() . " permissions created\n\n";
 
         // ===== ROLES =====
@@ -136,6 +150,8 @@ class RolesAndPermissionsSeeder extends Seeder
             'create_payment_method',
             'edit_payment_method',
             'delete_payment_method',
+            'view_packages',
+            'purchase_packages',
         ]);
         echo "✅ Org Admin role\n";
 
@@ -154,6 +170,7 @@ class RolesAndPermissionsSeeder extends Seeder
             'view_reports',
             'view_dashboard',
             'view_payment_method',
+            'view_packages', // Can view packages but not purchase
         ]);
         echo "✅ Staff role\n";
 
@@ -174,8 +191,21 @@ class RolesAndPermissionsSeeder extends Seeder
             'view_checkins',
             'view_reports',
             'view_dashboard',
+            'view_packages',
         ]);
         echo "✅ Viewer role\n\n";
+
+        // SALES AGENT - Can view referrals and scan at their org's events
+        $salesAgent = Role::firstOrCreate(['name' => 'sales_agent']);
+        $salesAgent->syncPermissions([
+            'view_organization',      // See orgs they referred
+            'view_event',             // See events from their orgs
+            'view_ticket',            // View tickets (read-only)
+            'scan_qr',                // Scan tickets at events
+            'view_checkins',          // See who's checked in
+            'view_dashboard',         // Access dashboard
+        ]);
+        echo "✅ Sales Agent role\n";
 
         // ===== CREATE DEFAULT SUPER ADMIN USER =====
         echo "Creating Default Super Admin User...\n";

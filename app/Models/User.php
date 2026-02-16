@@ -2,7 +2,7 @@
 
 namespace App\Models;
 
-// use Illuminate\Contracts\Auth\MustVerifyEmail;
+use Illuminate\Contracts\Auth\MustVerifyEmail;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Foundation\Auth\User as Authenticatable;
 use Illuminate\Notifications\Notifiable;
@@ -10,9 +10,9 @@ use Filament\Models\Contracts\FilamentUser;
 use Filament\Panel;
 use Spatie\Permission\Traits\HasRoles;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
-use Laravel\Sanctum\HasApiTokens;  // ← REMOVED THE "8" HERE
+use Laravel\Sanctum\HasApiTokens; 
 
-class User extends Authenticatable implements FilamentUser
+class User extends Authenticatable implements FilamentUser, MustVerifyEmail
 {
     /** @use HasFactory<\Database\Factories\UserFactory> */
     use HasFactory, Notifiable, HasRoles, HasApiTokens;
@@ -27,6 +27,7 @@ class User extends Authenticatable implements FilamentUser
         'email',
         'password',
         'organization_id',
+        'email_verified_at',
     ];
 
     /**
@@ -65,6 +66,11 @@ class User extends Authenticatable implements FilamentUser
     public function isOrgAdmin(): bool
     {
         return $this->hasRole('org_admin');
+    }
+
+    public function isSalesAgent(): bool
+    {
+        return $this->hasRole('sales_agent');
     }
 
     public function organization(): BelongsTo
