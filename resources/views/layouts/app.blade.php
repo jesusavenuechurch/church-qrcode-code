@@ -127,7 +127,7 @@
 
     <footer class="flex-none bg-white border-t border-gray-100 py-3 px-6">
         <div class="max-w-7xl mx-auto flex justify-between items-center">
-            <p class="text-[10px] font-bold text-gray-400 uppercase tracking-widest">© {{ date('Y') }} VENTIQ LESOTHO</p>
+            <p class="text-[10px] font-bold text-gray-400 uppercase tracking-widest">© {{ date('Y') }} VENTI<span class="text-[#F07F22]">Q</span> LESOTHO</p>
             <div class="flex gap-4 text-[10px] font-bold uppercase tracking-tight text-gray-500">
                 <a href="/become-agent" class="hover:text-[#F07F22] text-[#1D4069]">Become an Agent</a>
                 <button @click="showTerms = true" class="hover:text-[#F07F22]">Terms</button>
@@ -294,7 +294,7 @@
                     <div class="w-20 h-20 bg-green-50 text-green-500 rounded-full flex items-center justify-center mx-auto mb-6 shadow-inner">
                         <i class="fas fa-check text-2xl"></i>
                     </div>
-                    <h3 class="text-2xl font-black text-[#1D4069] tracking-tighter uppercase italic">Protocol Synced</h3>
+                    <h3 class="text-2xl font-black text-[#1D4069] tracking-tighter uppercase italic">Message Send</h3>
                     <p class="text-[10px] text-gray-400 mt-2 font-bold uppercase tracking-[0.2em]">Our core team will respond shortly.</p>
                     <button @click="showChat = false; submitted = false; name=''; phone=''; message=''; subject='Select Inquiry Type';" class="mt-8 text-[10px] font-black text-[#F07F22] uppercase tracking-[0.3em] border-b border-[#F07F22]/20 pb-1">Exit Console</button>
                 </div>
@@ -335,14 +335,14 @@
                     </section>
                     <section>
                         <h4 class="text-[10px] font-black text-[#1D4069] uppercase tracking-[0.1em] mb-1">3. Financial Protocols</h4>
-                        <p>All subscription fees are final. VENTIQ is not responsible for refunding ticket purchases; these must be handled between the attendee and organizer.</p>
+                        <p>All subscription fees are final. VENTI<span class="text-[#F07F22]">Q</span> is not responsible for refunding ticket purchases; these must be handled between the attendee and organizer.</p>
                     </section>
                     <section>
                         <h4 class="text-[10px] font-black text-[#1D4069] uppercase tracking-[0.1em] mb-1">4. Data Integrity</h4>
                         <p>User data is handled according to our privacy standards. Misuse of the platform for fraudulent activities will result in immediate termination.</p>
                     </section>
                     <section class="bg-gray-50 p-6 rounded-[2rem] border border-gray-100 italic font-medium">
-                        "Simply Connected" isn't just a tagline; it's our technical standard. By using VENTIQ, you agree to maintain the integrity of the network.
+                        "Simply Connected" isn't just a tagline; it's our technical standard. By using VENTI<span class="text-[#F07F22]">Q</span>, you agree to maintain the integrity of the network.
                     </section>
                 </div>
             </div>

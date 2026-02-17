@@ -93,7 +93,7 @@
                 Referred by Agent: {{ $agent->name }}
             </span>
             <h1 class="text-4xl font-black tracking-tighter text-[#1D4069] uppercase italic">
-                VENTIQ<span class="text-[#F07F22]">.</span>
+                VENTI<span class="text-[#F07F22]">Q.</span>
             </h1>
         </div>
 

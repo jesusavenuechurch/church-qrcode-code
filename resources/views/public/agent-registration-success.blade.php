@@ -23,7 +23,7 @@
         
         <div class="text-center mb-8">
              <div class="inline-block bg-emerald-600 text-white font-black px-3 py-1 rounded text-xl tracking-tighter mb-4">
-                VENTIQ
+                VENTI<span class="text-[#F07F22]">Q</span>
             </div>
         </div>
 

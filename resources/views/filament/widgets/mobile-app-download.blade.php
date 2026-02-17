@@ -13,7 +13,7 @@
                     </svg>
                 </div>
                 <h3 class="text-lg font-bold text-gray-900 dark:text-white uppercase tracking-tight">
-                    VENTIQ Mobile Scanner
+                    VENTI<span class="text-[#F07F22]">Q</span> Mobile Scanner
                 </h3>
             </div>
             <p class="text-sm text-gray-600 dark:text-gray-400">
