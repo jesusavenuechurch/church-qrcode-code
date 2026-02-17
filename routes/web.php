@@ -66,6 +66,7 @@ Route::get('/', function () {
     return view('welcome', compact('activeOrgs'));
 });
 
+Route::view('/about', 'public.about')->name('about');
 // 1. The handler for the email link (Fixes your 'verification.verify' error)
 Route::get('/email/verify/{id}/{hash}', function (EmailVerificationRequest $request) {
     $request->fulfill();

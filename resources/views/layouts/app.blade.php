@@ -6,8 +6,22 @@
     <meta name="csrf-token" content="{{ csrf_token() }}">
 
     <title>@yield('title', 'VENTIQ | Intelligent Ticketing & Event Streaming')</title>
-    <meta name="description" content="The modern gateway for workshops, events, and seamless registrations in Lesotho. Simply Connected.">
+    <meta name="description" content="@yield('meta_description', 'The modern gateway for workshops, events, and seamless registrations in Lesotho. Simply Connected.')">
     
+    <meta property="og:type" content="website">
+    <meta property="og:url" content="{{ url()->full() }}">
+    <meta property="og:title" content="@yield('title', 'VENTIQ | Intelligent Ticketing & Event Streaming')">
+    <meta property="og:description" content="@yield('meta_description', 'The modern gateway for workshops, events, and seamless registrations in Lesotho. Simply Connected.')">
+    <meta property="og:image" content="{{ asset('images/meta.jpg') }}">
+    <meta property="og:image:type" content="image/jpeg">
+    <meta property="og:image:width" content="1200">
+    <meta property="og:image:height" content="630">
+
+    <meta property="twitter:card" content="summary_large_image">
+    <meta property="twitter:url" content="{{ url()->full() }}">
+    <meta property="twitter:title" content="@yield('title', 'VENTIQ | Intelligent Ticketing & Event Streaming')">
+    <meta property="twitter:description" content="@yield('meta_description', 'The modern gateway for workshops, events, and seamless registrations in Lesotho. Simply Connected.')">
+    <meta property="twitter:image" content="{{ asset('images/meta.jpg') }}">
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700;900&family=JetBrains+Mono:wght@700&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
@@ -97,8 +111,8 @@
             </a>
 
             <div class="flex items-center gap-4 md:gap-8">
-                <a href="/pricing" class="hidden sm:block text-[10px] font-bold uppercase tracking-widest text-gray-500 hover:text-[#F07F22] transition-colors">Pricing</a>
-                <button @click="showChat = true" class="text-[10px] font-bold uppercase tracking-widest text-gray-500 hover:text-[#F07F22]">Contact</button>
+                <a href="/about" class="text-[10px] font-bold uppercase tracking-widest text-gray-500 hover:text-[#F07F22] transition-colors">About</a>
+                <button @click="showChat = true" class="hidden sm:block text-[10px] font-bold uppercase tracking-widest text-gray-500 hover:text-[#F07F22]">Contact</button>
                 <a href="{{ route('filament.admin.auth.login') }}" 
                    class="px-5 py-2 rounded-xl bg-[#1D4069]/5 text-[#1D4069] text-[10px] font-bold uppercase tracking-widest hover:bg-[#1D4069] hover:text-white transition-all">
                     Login

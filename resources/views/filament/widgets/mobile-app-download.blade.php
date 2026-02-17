@@ -22,7 +22,7 @@
         </div>
 
         <div class="flex-shrink-0 w-full md:w-auto">
-            <a href="YOUR_EXPO_LINK_HERE" 
+            <a href="https://expo.dev/accounts/amohelangt/projects/qrCodeScanner/builds/93172ca3-1822-4444-8fcf-a2f875367172" 
                target="_blank"
                class="inline-flex items-center justify-center gap-2 w-full px-6 py-3 font-bold text-white transition-all rounded-xl shadow-md bg-primary-600 hover:bg-primary-500 dark:bg-primary-500 dark:hover:bg-primary-400">
                 <svg class="w-5 h-5" fill="currentColor" viewBox="0 0 24 24">

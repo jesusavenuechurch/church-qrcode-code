@@ -3,6 +3,20 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="title" content="Register Your Organization | VENTIQ">
+    <meta name="description" content="Create professional event registration links, track attendance, manage payments, and access structured dashboards — all in one platform with VENTIQ.">
+
+    <meta property="og:type" content="website">
+    <meta property="og:url" content="{{ url()->current() }}">
+    <meta property="og:title" content="Register | VENTIQ">
+    <meta property="og:description" content="Create professional event registration links, track attendance, manage payments, and access structured dashboards — all in one platform with VENTIQ.">
+    <meta property="og:image" content="{{ asset('images/meta.jpg') }}">
+
+    <meta property="twitter:card" content="summary_large_image">
+    <meta property="twitter:url" content="{{ url()->current() }}">
+    <meta property="twitter:title" content="Register | VENTIQ">
+    <meta property="twitter:description" content="Create professional event registration links, track attendance, manage payments, and access structured dashboards — all in one platform with VENTIQ.">
+    <meta property="twitter:image" content="{{ asset('images/meta.jpg') }}">
     <title>Organization Onboarding | VENTIQ</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <script defer src="https://unpkg.com/alpinejs@3.x.x/dist/cdn.min.js"></script>

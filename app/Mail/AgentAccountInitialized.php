@@ -25,7 +25,7 @@ class AgentAccountInitialized extends Mailable
     public function envelope(): Envelope
     {
         return new Envelope(
-            subject: 'PROTOCOL ACTIVE: Your Ventiq Account is ready',
+            subject: 'Agent Partnership Approved – Activate Your VENTIQ Account',
         );
     }
 
