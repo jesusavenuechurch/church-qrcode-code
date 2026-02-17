@@ -6,11 +6,6 @@
          loaded: false,
          showHostModal: false,
          showAgentModal: false,
-         message: '',
-         name: '',
-         phone: '',
-         email: '',
-         subject: 'General Inquiry'
      }"
      x-init="setTimeout(() => loaded = true, 100)">
 
@@ -123,20 +118,19 @@
                         <p class="text-[10px] text-gray-400 font-medium mt-0.5">Compare plans</p>
                     </a>
 
+                    {{-- Agent Card --}}
                     <button @click="showAgentModal = true" type="button"
-                       class="group p-5 rounded-[1.5rem] bg-indigo-600 hover:bg-indigo-700 transition-all relative overflow-hidden text-left w-full active:scale-[0.98]">
-                        <div class="absolute -bottom-3 -right-3 opacity-20 pointer-events-none">
-                            <svg class="w-14 h-14 text-white" fill="currentColor" viewBox="0 0 24 24">
-                                <path d="M20 7h-4V5a3 3 0 00-3-3h-2a3 3 0 00-3 3v2H4a1 1 0 00-1 1v11a2 2 0 002 2h14a2 2 0 002-2V8a1 1 0 00-1-1z"/>
-                            </svg>
-                        </div>
-                        <div class="p-2 rounded-xl bg-white/20 text-white w-fit mb-3 relative z-10">
+                       class="group p-5 rounded-[1.5rem] bg-[#1D4069] hover:bg-[#0d2d4d] transition-all relative overflow-hidden text-left w-full active:scale-[0.98]">
+                        {{-- Background decoration --}}
+                        <div class="absolute -bottom-4 -right-4 w-20 h-20 bg-[#F07F22]/10 rounded-full pointer-events-none"></div>
+                        <div class="absolute -top-4 -left-4 w-16 h-16 bg-white/5 rounded-full pointer-events-none"></div>
+                        <div class="p-2 rounded-xl bg-[#F07F22]/20 text-[#F07F22] w-fit mb-3 relative z-10 group-hover:bg-[#F07F22] group-hover:text-white transition-all">
                             <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0z"/>
                             </svg>
                         </div>
-                        <p class="text-sm font-black text-white uppercase tracking-tight relative z-10">Partner with Ventiq</p>
-                        <p class="text-[10px] text-indigo-200 font-medium mt-0.5 relative z-10">Introduce organizers and Earn</p>
+                        <p class="text-sm font-black text-white uppercase tracking-tight relative z-10">Partner Up</p>
+                        <p class="text-[10px] text-[#F07F22] font-black mt-0.5 relative z-10">Earn 20% commission</p>
                     </button>
 
                 </div>
@@ -223,10 +217,10 @@
         </div>
     </div>
 
-    {{-- Chat modal lives in layouts/app.blade.php and is triggered via @contact-open.window --}}
+    {{-- Chat modal lives in layouts/app.blade.php --}}
 
     {{-- ================================================================
-         Agent Modal
+         Agent Modal — VENTIQ colors
     ================================================================ --}}
     <div x-show="showAgentModal"
          x-transition:enter="transition ease-out duration-250"
@@ -244,20 +238,21 @@
              x-transition:enter-start="opacity-0 scale-95 translate-y-2"
              x-transition:enter-end="opacity-100 scale-100 translate-y-0">
 
-            <div class="h-1 bg-gradient-to-r from-indigo-600 via-[#1D4069] to-indigo-600"></div>
+            <div class="h-1 bg-gradient-to-r from-[#1D4069] via-[#F07F22] to-[#1D4069]"></div>
 
             <div class="p-8 md:p-10">
 
                 {{-- Header --}}
                 <div class="flex items-start gap-4 mb-6">
-                    <div class="w-14 h-14 bg-indigo-50 text-indigo-600 rounded-2xl flex items-center justify-center flex-shrink-0 rotate-3">
+                    <div class="w-14 h-14 bg-[#1D4069]/8 text-[#1D4069] rounded-2xl flex items-center justify-center flex-shrink-0 rotate-3">
                         <svg class="w-7 h-7" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0z"/>
                         </svg>
                     </div>
                     <div>
                         <h3 class="text-2xl font-black text-[#1D4069] tracking-tight italic leading-tight">
-                            Grow    <span class="text-indigo-600">Ventiq.</span><br>Earn while you do.
+                            Grow VENTIQ.<br>
+                            <span class="text-[#F07F22]">Earn while you do.</span>
                         </h3>
                         <p class="text-[10px] font-black text-gray-400 uppercase tracking-widest mt-1">Agent Partnership Program</p>
                     </div>
@@ -265,18 +260,18 @@
 
                 {{-- What it means --}}
                 <p class="text-sm text-gray-500 font-medium leading-relaxed mb-6">
-                    As a Ventiq Agent, you introduce event organizers to the platform. Every time someone you refer buys a package, you earn a 20% commission — automatically.
+                    As a VENTIQ Agent, you introduce event organizers to the platform. Every time someone you refer buys a package, you earn a 20% commission — tracked automatically.
                 </p>
 
                 {{-- Commission breakdown --}}
-                <div class="bg-indigo-50 rounded-2xl p-4 mb-6">
-                    <p class="text-[10px] font-black text-indigo-400 uppercase tracking-widest mb-3">Your earnings per package sold</p>
+                <div class="bg-[#1D4069]/4 rounded-2xl p-4 mb-6">
+                    <p class="text-[10px] font-black text-[#1D4069] uppercase tracking-widest mb-3">Your earnings per package sold</p>
                     <div class="grid grid-cols-3 gap-2">
                         @foreach([['M250', 'M50', 'Starter'], ['M700', 'M140', 'Growth'], ['M1500', 'M300', 'Pro']] as $tier)
-                        <div class="bg-white rounded-xl p-3 text-center">
+                        <div class="bg-white rounded-xl p-3 text-center shadow-sm">
                             <p class="text-[10px] text-gray-400 font-bold uppercase tracking-wide">{{ $tier[2] }}</p>
                             <p class="text-[10px] text-gray-300 font-medium line-through mt-0.5">{{ $tier[0] }}</p>
-                            <p class="text-lg font-black text-indigo-600 leading-none mt-1">{{ $tier[1] }}</p>
+                            <p class="text-lg font-black text-[#F07F22] leading-none mt-1">{{ $tier[1] }}</p>
                         </div>
                         @endforeach
                     </div>
@@ -286,12 +281,12 @@
                 <div class="space-y-2.5 mb-6">
                     <p class="text-[10px] font-black text-gray-400 uppercase tracking-widest">How it works</p>
                     @foreach([
-                        ['1', 'You refer an event organizer to Ventiq', 'indigo'],
-                        ['2', 'They sign up and buy any package', 'indigo'],
-                        ['3', 'You earn 20% — tracked automatically', 'indigo'],
+                        ['1', 'You refer an event organizer to VENTIQ'],
+                        ['2', 'They sign up and purchase any package'],
+                        ['3', 'You earn 20% — tracked automatically'],
                     ] as $step)
                     <div class="flex items-center gap-3">
-                        <div class="w-6 h-6 rounded-full bg-indigo-600 text-white flex items-center justify-center text-[10px] font-black flex-shrink-0">
+                        <div class="w-6 h-6 rounded-full bg-[#1D4069] text-white flex items-center justify-center text-[10px] font-black flex-shrink-0">
                             {{ $step[0] }}
                         </div>
                         <p class="text-xs text-gray-600 font-medium">{{ $step[1] }}</p>
@@ -302,7 +297,7 @@
                 {{-- CTAs --}}
                 <div class="space-y-3">
                     <a href="/become-agent"
-                       class="block w-full py-4 rounded-2xl bg-indigo-600 hover:bg-indigo-700 text-white font-black text-xs uppercase tracking-[0.2em] shadow-lg transition-all text-center">
+                       class="block w-full py-4 rounded-2xl bg-[#1D4069] hover:bg-[#F07F22] text-white font-black text-xs uppercase tracking-[0.2em] shadow-lg transition-all text-center">
                         Apply to Become an Agent
                     </a>
                     <button @click="showAgentModal = false"

@@ -95,8 +95,10 @@
             <span class="inline-block px-3 py-1 rounded-full bg-[#1D4069]/5 text-[#1D4069] text-[10px] font-black uppercase tracking-[0.2em] mb-3">
                 VENTIQ Agent Application
             </span>
-            <h1 class="text-3xl md:text-4xl font-black tracking-tighter text-gray-900">
-                BECOME A <span class="text-[#F07F22]">VENTIQ</span> PARTNER
+            <h1 class="text-3xl md:text-4xl font-black tracking-tighter text-[#1D4069]">
+                BECOME A
+                        VENTI<span class="text-[#F07F22]">Q </span>
+                     PARTNER
             </h1>
         </div>
 
