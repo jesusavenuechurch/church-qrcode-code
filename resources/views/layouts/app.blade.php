@@ -28,6 +28,7 @@
     
     <script src="https://cdn.tailwindcss.com"></script>
     <script defer src="https://unpkg.com/alpinejs@3.x.x/dist/cdn.min.js"></script>
+    <script src="https://unpkg.com/@dotlottie/player-component@2.7.12/dist/dotlottie-player.mjs" type="module"></script>
     
     <style>
         [x-cloak] { display: none !important; }
@@ -35,6 +36,15 @@
         .mono { font-family: 'JetBrains Mono', monospace; }
         .no-scrollbar::-webkit-scrollbar { display: none; }
         .custom-blur { backdrop-filter: blur(12px); background-color: rgba(255, 255, 255, 0.9); }
+        #page-loader {
+            transition: opacity 0.7s cubic-bezier(0.4, 0, 0.2, 1),
+            visibility 0.7s cubic-bezier(0.4, 0, 0.2, 1);
+        }
+        #page-loader.done {
+            opacity: 0;
+            visibility: hidden;
+            pointer-events: none;
+        }
     </style>
 </head>
 
@@ -97,6 +107,38 @@
         }
       }"
       @contact-open.window="showChat = true">
+
+<div id="page-loader"
+     class="fixed inset-0 z-[9999] flex flex-col items-center justify-center bg-[#1D4069]">
+
+    <div class="flex flex-col items-center gap-4">
+
+        {{-- Big walking orange --}}
+        <dotlottie-player
+            id="loader-lottie"
+            src="https://lottie.host/0fc52c0b-e5dc-4da6-91ff-35b361bfa05c/8V7ZcOiDvS.lottie"
+            background="transparent"
+            speed="0.6"
+            style="width: 220px; height: 220px;"
+            autoplay
+            loop>
+        </dotlottie-player>
+
+        {{-- Wordmark sits below the orange --}}
+        <div class="flex flex-col items-center gap-1">
+            <span class="text-2xl font-black tracking-tighter uppercase text-white italic">
+                VENTI<span class="text-[#F07F22]">Q</span>
+            </span>
+            <span class="text-[9px] font-bold tracking-[0.3em] text-white/40 uppercase">
+                Intelligence
+            </span>
+        </div>
+    </div>
+
+    <p class="absolute bottom-10 text-[9px] font-bold tracking-[0.3em] text-white/20 uppercase">
+        Simply Connected
+    </p>
+</div>
 
     <nav class="flex-none border-b border-gray-100 bg-white/90 custom-blur z-50">
         <div class="max-w-7xl mx-auto px-4 py-4 flex items-center justify-between">
@@ -354,6 +396,30 @@
             </div>
         </div>
     </div>
+<script>
+    document.addEventListener('DOMContentLoaded', function () {
+        const player = document.getElementById('loader-lottie');
+        const loader = document.getElementById('page-loader');
+        let dismissed = false;
 
+        function dismissLoader() {
+            if (dismissed) return;
+            dismissed = true;
+            loader.classList.add('done');
+            setTimeout(() => { document.body.style.overflow = ''; }, 750);
+        }
+
+        if (player) {
+            player.addEventListener('loop', function onLoop() {
+                player.removeEventListener('loop', onLoop);
+                dismissLoader();
+            });
+            player.addEventListener('error', () => setTimeout(dismissLoader, 500));
+        }
+
+        // Hard fallback — never blocks longer than 2.5s
+        setTimeout(dismissLoader, 3500);
+    });
+</script>
 </body>
 </html>
