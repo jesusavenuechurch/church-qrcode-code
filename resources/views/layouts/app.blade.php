@@ -126,7 +126,7 @@
 
         {{-- Wordmark sits below the orange --}}
         <div class="flex flex-col items-center gap-1">
-            <span class="text-2xl font-black tracking-tighter uppercase text-white italic">
+            <span class="text-2xl font-black tracking-tighter uppercase text-white">
                 VENTI<span class="text-[#F07F22]">Q</span>
             </span>
             <span class="text-[9px] font-bold tracking-[0.3em] text-white/40 uppercase">
