@@ -116,7 +116,7 @@
         {{-- Big walking orange --}}
         <dotlottie-player
             id="loader-lottie"
-            src="https://lottie.host/0fc52c0b-e5dc-4da6-91ff-35b361bfa05c/8V7ZcOiDvS.lottie"
+            src="{{ asset('animation/loader.json') }}"
             background="transparent"
             speed="0.6"
             style="width: 220px; height: 220px;"
@@ -171,7 +171,7 @@
         <div class="max-w-7xl mx-auto flex justify-between items-center">
             <p class="text-[10px] font-bold text-gray-400 uppercase tracking-widest">© {{ date('Y') }} VENTI<span class="text-[#F07F22]">Q</span> LESOTHO</p>
             <div class="flex gap-4 text-[10px] font-bold uppercase tracking-tight text-gray-500">
-                <a href="/become-agent" class="hover:text-[#F07F22] text-[#1D4069]">Become an Agent</a>
+                {{-- <a href="/become-agent" class="hover:text-[#F07F22] text-[#1D4069]">Become an Agent</a> --}}
                 <button @click="showTerms = true" class="hover:text-[#F07F22]">Terms</button>
                 <button @click="showChat = true" class="hover:text-[#F07F22]">Support</button>
             </div>
@@ -384,7 +384,7 @@
                         <p>User data is handled according to our privacy standards. Misuse of the platform for fraudulent activities will result in immediate termination.</p>
                     </section>
                     <section class="bg-gray-50 p-6 rounded-[2rem] border border-gray-100 italic font-medium">
-                        "Simply Connected" isn't just a tagline; it's our technical standard. By using VENTI<span class="text-[#F07F22]">Q</span>, you agree to maintain the integrity of the network.
+                        "Simply Connected" isn't just a tagline; it's our technical standard. By using VENTIQ, you agree to maintain the integrity of the network.
                     </section>
                 </div>
             </div>
