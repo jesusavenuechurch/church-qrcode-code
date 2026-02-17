@@ -12,7 +12,7 @@
     <meta property="og:url" content="{{ url()->full() }}">
     <meta property="og:title" content="@yield('title', 'VENTIQ | Intelligent Ticketing & Event Streaming')">
     <meta property="og:description" content="@yield('meta_description', 'The modern gateway for workshops, events, and seamless registrations in Lesotho. Simply Connected.')">
-    <meta property="og:image" content="{{ asset('images/meta.jpg') }}">
+    <meta property="og:image" content="{{ asset('images/meta.jpeg') }}">
     <meta property="og:image:type" content="image/jpeg">
     <meta property="og:image:width" content="1200">
     <meta property="og:image:height" content="630">
@@ -21,7 +21,7 @@
     <meta property="twitter:url" content="{{ url()->full() }}">
     <meta property="twitter:title" content="@yield('title', 'VENTIQ | Intelligent Ticketing & Event Streaming')">
     <meta property="twitter:description" content="@yield('meta_description', 'The modern gateway for workshops, events, and seamless registrations in Lesotho. Simply Connected.')">
-    <meta property="twitter:image" content="{{ asset('images/meta.jpg') }}">
+    <meta property="twitter:image" content="{{ asset('images/meta.jpeg') }}">
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700;900&family=JetBrains+Mono:wght@700&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">

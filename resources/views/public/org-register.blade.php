@@ -4,7 +4,20 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <meta name="csrf-token" content="{{ csrf_token() }}">
-    <title>Register | VENTIQ</title>
+    <meta name="title" content="Register | VENTIQ">
+    <meta name="description" content="Join the modern gateway for workshops, events, and seamless registrations in Lesotho — structured, professional, and simply connected.">
+
+    <meta property="og:type" content="website">
+    <meta property="og:url" content="{{ url()->current() }}">
+    <meta property="og:title" content="Register | VENTIQ">
+    <meta property="og:description" content="Join the calibrated middle-layer of Lesotho's event economy. Initialize your institutional gateway with VENTIQ.">
+    <meta property="og:image" content="{{ asset('meta.jpg') }}">
+
+    <meta property="twitter:card" content="summary_large_image">
+    <meta property="twitter:url" content="{{ url()->current() }}">
+    <meta property="twitter:title" content="Register | VENTIQ">
+    <meta property="twitter:description" content="Join the calibrated middle-layer of Lesotho's event economy. Initialize your institutional gateway with VENTIQ.">
+    <meta property="twitter:image" content="{{ asset('meta.jpeg') }}">
     <script src="https://cdn.tailwindcss.com"></script>
     <script defer src="https://unpkg.com/alpinejs@3.x.x/dist/cdn.min.js"></script>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;700;900&family=JetBrains+Mono&display=swap" rel="stylesheet">
