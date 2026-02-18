@@ -418,7 +418,7 @@
         }
 
         // Hard fallback — never blocks longer than 2.5s
-        setTimeout(dismissLoader, 3500);
+        setTimeout(dismissLoader, 2500);
     });
 </script>
 </body>
