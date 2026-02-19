@@ -85,7 +85,7 @@ class PublicEventController extends Controller
                 $query->where('is_active', true);
             }])
             ->orderBy('event_date', 'asc')
-            ->get();
+            ->paginate();
 
         return view('events.browse', compact('events'));
     }

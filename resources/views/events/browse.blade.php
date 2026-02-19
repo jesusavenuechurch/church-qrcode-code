@@ -5,138 +5,101 @@
 @section('content')
 <div class="max-w-7xl mx-auto px-6 py-12">
     
-    <!-- Page Header -->
     <div class="mb-8">
-        <a href="{{ url('/') }}" class="text-sm text-gray-600 hover:text-green-600 mb-4 inline-block">
+        <a href="{{ url('/') }}" class="text-[10px] font-black uppercase tracking-widest text-gray-400 hover:text-[#1D4069] mb-4 inline-block transition-colors">
             ← Back to home
         </a>
-        <h1 class="text-3xl font-bold text-gray-900 mb-2">Upcoming Events</h1>
-        <p class="text-gray-600">Find events near you - free or paid, all welcome</p>
+        <h1 class="text-4xl font-black text-[#1D4069] tracking-tight uppercase italic mb-2">Upcoming <span class="text-[#F07F22]">Events.</span></h1>
+        <p class="text-sm text-gray-500 font-medium">Find events near you - professional infrastructure for Lesotho.</p>
     </div>
 
-    <!-- Filters (Optional - Simple version) -->
-    <div class="mb-8 flex flex-wrap gap-3">
-        <button class="px-4 py-2 bg-green-600 text-white rounded-lg text-sm font-medium">
+    <div class="mb-10 flex flex-wrap gap-2">
+        <button class="px-5 py-2.5 bg-[#1D4069] text-white rounded-xl text-[10px] font-black uppercase tracking-widest shadow-lg shadow-blue-900/20">
             All Events
         </button>
-        <button class="px-4 py-2 bg-white border border-gray-300 text-gray-700 rounded-lg text-sm font-medium hover:border-green-400">
-            Free Events
-        </button>
-        <button class="px-4 py-2 bg-white border border-gray-300 text-gray-700 rounded-lg text-sm font-medium hover:border-green-400">
-            This Week
+        <button class="px-5 py-2.5 bg-white border border-gray-200 text-gray-400 rounded-xl text-[10px] font-black uppercase tracking-widest hover:border-[#F07F22] hover:text-[#F07F22] transition-all">
+            Free Access
         </button>
     </div>
 
     @if($events->count() > 0)
-        <!-- Events Grid -->
-        <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+        <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
             @foreach($events as $event)
-                <div class="bg-white rounded-xl shadow-sm overflow-hidden hover:shadow-md transition-shadow border border-gray-200">
+                {{-- Entire Card is now a Link --}}
+                <a href="{{ route('public.event', ['orgSlug' => $event->organization->slug, 'eventSlug' => $event->slug]) }}" 
+                   class="group flex flex-col bg-white rounded-[2rem] shadow-sm overflow-hidden hover:shadow-2xl hover:shadow-blue-900/10 transition-all duration-500 border border-gray-100 outline-none">
                     
-                    <!-- Event Image -->
-                    @if($event->banner_image)
-                        <div class="h-48 overflow-hidden">
+                    <div class="aspect-[16/9] w-full overflow-hidden bg-gray-100 relative">
+                        @if($event->banner_image)
                             <img src="{{ Storage::url($event->banner_image) }}" 
                                  alt="{{ $event->name }}" 
-                                 class="w-full h-full object-cover">
-                        </div>
-                    @else
-                        <div class="h-48 bg-gradient-to-br from-green-500 to-blue-600 flex items-center justify-center">
-                            <svg class="w-16 h-16 text-white opacity-50" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
-                            </svg>
-                        </div>
-                    @endif
-
-                    <!-- Event Content -->
-                    <div class="p-6">
+                                 class="w-full h-full object-cover group-hover:scale-105 transition-transform duration-700">
+                        @else
+                            <div class="w-full h-full bg-gradient-to-br from-[#1D4069] to-[#1D4069]/80 flex items-center justify-center">
+                                <span class="text-white/20 font-black italic text-4xl uppercase tracking-tighter">Ventiq.</span>
+                            </div>
+                        @endif
                         
-                        <!-- Organization -->
-                        <div class="text-xs text-green-600 font-medium mb-2">
+                        <div class="absolute top-4 right-4">
+                            @php $minPrice = $event->tiers->min('price'); @endphp
+                            <span class="px-3 py-1.5 rounded-lg bg-white/90 backdrop-blur text-[10px] font-black text-[#1D4069] shadow-sm uppercase tracking-widest">
+                                {{ $minPrice == 0 ? 'Free' : 'M' . number_format($minPrice) . '+' }}
+                            </span>
+                        </div>
+                    </div>
+
+                    <div class="p-8 flex flex-col flex-grow">
+                        <div class="text-[9px] text-[#F07F22] font-black uppercase tracking-[0.2em] mb-3">
                             {{ $event->organization->name }}
                         </div>
 
-                        <!-- Event Name -->
-                        <h3 class="text-lg font-bold text-gray-900 mb-2 line-clamp-2">
-                            {{ $event->name }}
-                        </h3>
+                        <div class="h-[56px] mb-2">
+                            <h3 class="text-xl font-black text-[#1D4069] leading-tight line-clamp-2 uppercase tracking-tight group-hover:text-[#F07F22] transition-colors">
+                                {{ $event->name }}
+                            </h3>
+                        </div>
                         
-                        @if($event->tagline)
-                            <p class="text-sm text-gray-600 mb-4 line-clamp-1">
-                                {{ $event->tagline }}
-                            </p>
-                        @endif
+                        <div class="h-[40px] mb-6">
+                            @if($event->tagline)
+                                <p class="text-xs text-gray-500 font-medium line-clamp-2 italic">
+                                    {{ $event->tagline }}
+                                </p>
+                            @endif
+                        </div>
 
-                        <!-- Event Details -->
-                        <div class="space-y-2 mb-4 text-sm">
+                        <div class="space-y-3 mb-8 flex-grow">
                             @if($event->event_date)
-                                <div class="flex items-center text-gray-700">
-                                    <svg class="w-4 h-4 text-green-600 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
-                                    </svg>
-                                    <span>{{ $event->event_date->format('M j, Y') }}</span>
-                                </div>
-                                <div class="flex items-center text-gray-700">
-                                    <svg class="w-4 h-4 text-green-600 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
-                                    </svg>
-                                    <span>{{ $event->event_date->format('g:i A') }}</span>
+                                <div class="flex items-center text-[11px] font-bold text-gray-600 uppercase tracking-tight">
+                                    <i class="far fa-calendar-alt text-[#F07F22] w-5 text-sm"></i>
+                                    <span>{{ $event->event_date->format('M j, Y') }} @ {{ $event->event_date->format('g:i A') }}</span>
                                 </div>
                             @endif
 
                             @if($event->venue)
-                                <div class="flex items-center text-gray-700">
-                                    <svg class="w-4 h-4 text-red-600 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z" />
-                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 11a3 3 0 11-6 0 3 3 0 016 0z" />
-                                    </svg>
-                                    <span>{{ $event->venue }}</span>
-                                </div>
-                            @endif
-
-                            <!-- Ticket Price Range -->
-                            @php
-                                $minPrice = $event->tiers->min('price');
-                                $maxPrice = $event->tiers->max('price');
-                            @endphp
-                            @if($event->tiers->count() > 0)
-                                <div class="flex items-center text-gray-700">
-                                    <svg class="w-4 h-4 text-blue-600 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 5v2m0 4v2m0 4v2M5 5a2 2 0 00-2 2v3a2 2 0 110 4v3a2 2 0 002 2h14a2 2 0 002-2v-3a2 2 0 110-4V7a2 2 0 00-2-2H5z" />
-                                    </svg>
-                                    <span>
-                                        @if($minPrice == 0)
-                                            <span class="text-green-600 font-semibold">Free</span>
-                                        @elseif($minPrice == $maxPrice)
-                                            {{ number_format($minPrice) }} LSL
-                                        @else
-                                            {{ number_format($minPrice) }} - {{ number_format($maxPrice) }} LSL
-                                        @endif
-                                    </span>
+                                <div class="flex items-center text-[11px] font-bold text-gray-600 uppercase tracking-tight">
+                                    <i class="fas fa-map-marker-alt text-[#1D4069] w-5 text-sm"></i>
+                                    <span class="line-clamp-1">{{ $event->venue }}</span>
                                 </div>
                             @endif
                         </div>
 
-                        <!-- View Event Button -->
-                        <a href="{{ route('public.event', ['orgSlug' => $event->organization->slug, 'eventSlug' => $event->slug]) }}" 
-                           class="block w-full text-center bg-green-600 hover:bg-green-700 text-white font-medium py-2.5 px-4 rounded-lg transition-colors">
-                            View Event & Register
-                        </a>
+                        <div class="mt-auto w-full text-center bg-[#1D4069] group-hover:bg-[#F07F22] text-white font-black py-4 px-4 rounded-2xl transition-all uppercase text-[10px] tracking-[0.3em] shadow-lg shadow-blue-900/10">
+                            Secure Access
+                        </div>
                     </div>
-                </div>
+                </a>
             @endforeach
         </div>
+
+        <div class="mt-16 custom-pagination">
+            {{ $events->links() }}
+        </div>
     @else
-        <!-- No Events -->
-        <div class="bg-white rounded-xl shadow-sm p-12 text-center">
-            <svg class="w-16 h-16 text-gray-400 mx-auto mb-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
-            </svg>
-            <h3 class="text-xl font-semibold text-gray-900 mb-2">No Upcoming Events</h3>
-            <p class="text-gray-600 mb-6">Check back soon for new events!</p>
-            <a href="{{ url('/') }}" 
-               class="inline-block text-green-600 hover:text-green-700 font-medium">
-                ← Back to Home
+        <div class="bg-white rounded-[2.5rem] shadow-sm p-16 text-center border border-dashed border-gray-200">
+            <h3 class="text-xl font-black text-[#1D4069] uppercase italic mb-2">Protocol Empty</h3>
+            <p class="text-sm text-gray-400 font-medium mb-8">No events currently scheduled in the Ventiq network.</p>
+            <a href="{{ url('/') }}" class="text-[10px] font-black uppercase tracking-widest text-[#F07F22] hover:underline">
+                ← Return to Base
             </a>
         </div>
     @endif
